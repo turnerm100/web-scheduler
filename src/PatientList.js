@@ -65,6 +65,8 @@ export default function PatientList() {
               <th>DOB</th>
               <th>Hospital</th>
               <th>Status</th>
+              <th>Bag1 Duration</th>
+              <th>Bag2 Duration</th>
               <th>Edit</th>
             </tr>
           </thead>
@@ -76,6 +78,8 @@ export default function PatientList() {
                 <td>{patient.dob}</td>
                 <td>{patient.hospital}</td>
                 <td>{patient.status}</td>
+                <td>{patient.bag1Duration || ''}</td>
+                <td>{patient.bag2Duration || ''}</td>
                 <td>
                   <button onClick={() => handleEditClick(patient)}>Edit</button>
                 </td>
