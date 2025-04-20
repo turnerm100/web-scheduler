@@ -118,6 +118,25 @@ export default function PatientList() {
           <label>Visit Time:</label><br />
           <input name="bag1VisitTime" type="time" value={formData.bag1VisitTime || ''} onChange={handleChange} /><br /><br />
 
+          <h4>Bag #2</h4>
+          <label>Bag Duration Override:</label><br />
+          <select name="bag2Override" value={formData.bag2Override || ''} onChange={handleChange}>
+            <option value="">--</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option><option>7</option>
+          </select><br /><br />
+
+          <label>Bag Duration (calculated or manual):</label><br />
+          <input name="bag2Duration" value={formData.bag2Duration || ''} onChange={handleChange} /><br /><br />
+
+          <label>Visit Time Confirmation Call:</label><br />
+          <input name="bag2CallTime" value={formData.bag2CallTime || ''} onChange={handleChange} /><br /><br />
+
+          <label>Bag Change Date:</label><br />
+          <input name="bag2ChangeDate" type="text" value={formData.bag2ChangeDate || ''} onChange={handleChange} /><br /><br />
+
+          <label>Visit Time:</label><br />
+          <input name="bag2VisitTime" type="time" value={formData.bag2VisitTime || ''} onChange={handleChange} /><br /><br />
+
           <button onClick={handleUpdate}>Update</button>
           <button onClick={() => setShowModal(false)} style={{ marginLeft: 10 }}>Cancel</button>
         </div>
