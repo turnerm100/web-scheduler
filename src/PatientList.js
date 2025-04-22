@@ -61,8 +61,8 @@ export default function PatientList() {
       </table>
 
       {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)' }}>
-          <div style={{ background: 'white', margin: '5% auto', padding: 20, width: '90%', maxWidth: 800 }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', overflow: 'auto' }}>
+          <div style={{ background: 'white', margin: '5% auto', padding: 20, width: '90%', maxWidth: 800, maxHeight: '90vh', overflowY: 'auto', borderRadius: '8px' }}>
             <button onClick={handleCloseModal} style={{ float: 'right' }}>Cancel</button>
             <AddPatient key={selectedPatient?.id || 'new'} editData={selectedPatient} onClose={handleCloseModal} />
           </div>
