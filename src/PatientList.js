@@ -47,7 +47,10 @@ export default function PatientList() {
           {patients.map(p => (
             <tr key={p.id}>
               <td>
-                <button onClick={() => handleEdit(p)} style={{ background: 'none', border: 'none', color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}>
+                <button
+                  onClick={() => handleEdit(p)}
+                  style={{ background: 'none', border: 'none', color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}
+                >
                   {p.name}
                 </button>
               </td>
@@ -61,8 +64,27 @@ export default function PatientList() {
       </table>
 
       {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', overflow: 'auto' }}>
-          <div style={{ background: 'white', margin: '5% auto', padding: 20, width: '90%', maxWidth: 800, maxHeight: '90vh', overflowY: 'auto', borderRadius: '8px' }}>
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0,0,0,0.5)',
+          overflow: 'auto',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            margin: '40px auto',
+            padding: '20px',
+            width: '90%',
+            maxWidth: '800px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+          }}>
             <button onClick={handleCloseModal} style={{ float: 'right' }}>Cancel</button>
             <AddPatient key={selectedPatient?.id || 'new'} editData={selectedPatient} onClose={handleCloseModal} />
           </div>
