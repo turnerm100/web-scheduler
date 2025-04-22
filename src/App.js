@@ -36,19 +36,22 @@ function App() {
           width: '100%',
           height: '100%',
           background: 'rgba(0,0,0,0.5)',
-          overflow: 'auto',
-          zIndex: 1000
+          overflowY: 'auto',
+          zIndex: 1000,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          paddingTop: '40px'
         }}>
           <div style={{
             background: 'white',
-            margin: '40px auto',
             padding: '20px',
             width: '90%',
             maxWidth: '800px',
-            maxHeight: '90vh',
-            overflowY: 'auto',
             borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            maxHeight: '90vh',
+            overflowY: 'auto'
           }}>
             <button onClick={() => setShowAddModal(false)} style={{ float: 'right' }}>Cancel</button>
             <AddPatient onClose={() => setShowAddModal(false)} />
