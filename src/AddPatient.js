@@ -1,31 +1,37 @@
 // src/AddPatient.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, Timestamp, doc } from 'firebase/firestore';
 
-export default function AddPatient() {
+export default function AddPatient({ editData, onClose }) {
   const [formData, setFormData] = useState({
     name: '',
     mrn: '',
     dob: '',
-    type: 'Adult',
-    status: 'Active',
-    dx: 'Relapse Refractory',
-    hospital: 'UWMC',
-    pharmTeam: '1A',
-    nurseTeam: 'North',
-    interpreter: 'No',
-    readWriteLang: 'Yes',
+    type: '',
+    status: '',
+    dx: '',
+    hospital: '',
+    pharmTeam: '',
+    nurseTeam: '',
+    interpreter: '',
+    readWriteLang: '',
     notes: '',
-    lineType: 'Port',
-    ext: 'No',
-    cycle: 'Cycle 1',
-    daysInCycle: '28',
-    pipsBagChanges: 'Yes',
+    lineType: '',
+    ext: '',
+    cycle: '',
+    daysInCycle: '',
+    pipsBagChanges: '',
     hospStartDate: '',
     ourStartDate: '',
     hookupTime: ''
   });
+
+  useEffect(() => {
+    if (editData) {
+      setFormData(editData);
+    }
+  }, [editData]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,80 +40,91 @@ export default function AddPatient() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'patients'), {
-        ...formData,
-        createdAt: Timestamp.now()
-      });
-      alert('Patient added successfully!');
-      setFormData({
-        name: '', mrn: '', dob: '', type: 'Adult', status: 'Active', dx: 'Relapse Refractory',
-        hospital: 'UWMC', pharmTeam: '1A', nurseTeam: 'North', interpreter: 'No',
-        readWriteLang: 'Yes', notes: '', lineType: 'Port', ext: 'No', cycle: 'Cycle 1',
-        daysInCycle: '28', pipsBagChanges: 'Yes', hospStartDate: '', ourStartDate: '', hookupTime: ''
-      });
+      if (editData) {
+        await updateDoc(doc(db, 'patients', editData.id), formData);
+        alert('Patient updated successfully!');
+      } else {
+        await addDoc(collection(db, 'patients'), {
+          ...formData,
+          createdAt: Timestamp.now()
+        });
+        alert('Patient added successfully!');
+      }
+      if (onClose) onClose();
     } catch (error) {
-      console.error('Error adding patient:', error);
-      alert('Failed to add patient.');
+      console.error('Error saving patient:', error);
+      alert('Failed to save patient.');
     }
   };
 
+  const handleCancel = () => {
+    setFormData({
+      name: '', mrn: '', dob: '', type: '', status: '', dx: '', hospital: '',
+      pharmTeam: '', nurseTeam: '', interpreter: '', readWriteLang: '', notes: '',
+      lineType: '', ext: '', cycle: '', daysInCycle: '', pipsBagChanges: '',
+      hospStartDate: '', ourStartDate: '', hookupTime: ''
+    });
+    if (onClose) onClose();
+  };
+
+  const renderField = (label, name, type = 'text') => (
+    <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+      <label style={{ width: '250px' }}><strong>{label}:</strong></label>
+      <input
+        type={type}
+        name={name}
+        value={formData[name] || ''}
+        onChange={handleChange}
+        style={{ width: '300px' }}
+      />
+    </div>
+  );
+
+  const renderSelect = (label, name, options) => (
+    <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+      <label style={{ width: '250px' }}><strong>{label}:</strong></label>
+      <select name={name} value={formData[name] || ''} onChange={handleChange} style={{ width: '300px' }}>
+        <option value="">Select</option>
+        {options.map(opt => <option key={opt}>{opt}</option>)}
+      </select>
+    </div>
+  );
+
   return (
     <form onSubmit={handleSubmit} style={{ padding: 20 }}>
-      <h2>Add New Patient</h2>
-      <input name="name" placeholder="Patient Name" value={formData.name} onChange={handleChange} /><br /><br />
-      <input name="mrn" placeholder="MRN#" value={formData.mrn} onChange={handleChange} /><br /><br />
-      <input name="dob" type="date" placeholder="DOB" value={formData.dob} onChange={handleChange} /><br /><br />
-      <select name="type" value={formData.type} onChange={handleChange}>
-        <option>Adult</option><option>Pediatric</option>
-      </select><br /><br />
-      <select name="status" value={formData.status} onChange={handleChange}>
-        <option>Active</option><option>On Hold</option><option>Discharged</option><option>Pending</option>
-      </select><br /><br />
-      <select name="dx" value={formData.dx} onChange={handleChange}>
-        <option>Relapse Refractory</option><option>MRD Positive</option>
-      </select><br /><br />
-      <select name="hospital" value={formData.hospital} onChange={handleChange}>
-        <option>UWMC</option><option>Swedish</option><option>Prov Colby</option><option>FHCC</option><option>SCH</option>
-      </select><br /><br />
-      <select name="pharmTeam" value={formData.pharmTeam} onChange={handleChange}>
-        <option>1A</option><option>1E</option><option>2G</option><option>4G</option>
-      </select><br /><br />
-      <select name="nurseTeam" value={formData.nurseTeam} onChange={handleChange}>
-        <option>North</option><option>South</option><option>Central</option><option>East</option>
-      </select><br /><br />
-      <select name="interpreter" value={formData.interpreter} onChange={handleChange}>
-        <option>No</option><option>Yes - Spanish</option><option>Yes - Cantonese</option>
-        <option>Yes - Mandarin</option><option>Yes - Korean</option><option>Yes - Russian</option>
-        <option>Yes - Japanese</option><option>Yes - Arabic</option><option>Yes - Vietnamese</option>
-        <option>Yes - Portugese</option><option>Yes - Other</option>
-      </select><br /><br />
-      <select name="readWriteLang" value={formData.readWriteLang} onChange={handleChange}>
-        <option>Yes</option><option>No</option>
-      </select><br /><br />
-      <textarea name="notes" placeholder="Notes" value={formData.notes} onChange={handleChange} /><br /><br />
-      <select name="lineType" value={formData.lineType} onChange={handleChange}>
-        <option>Port</option><option>PICC - SL</option><option>PICC - DL</option><option>PICC - TL</option>
-        <option>CVC Tunneled - SL</option><option>CVC Tunneled - DL</option><option>CVC Tunneled - TL</option>
-        <option>Midline - SL</option><option>Midline - DL</option><option>Midline - TL</option>
-      </select><br /><br />
-      <select name="ext" value={formData.ext} onChange={handleChange}>
-        <option>No</option><option>Yes-7"</option><option>Yes-14"</option>
-      </select><br /><br />
-      <select name="cycle" value={formData.cycle} onChange={handleChange}>
-        <option>Cycle 1</option><option>Cycle 2</option><option>Cycle 3</option><option>Cycle 4</option><option>Cycle 5</option>
-      </select><br /><br />
-      <select name="daysInCycle" value={formData.daysInCycle} onChange={handleChange}>
-        {[...Array(28)].map((_, i) => (
-          <option key={i+1}>{i+1}</option>
-        ))}
-      </select><br /><br />
-      <select name="pipsBagChanges" value={formData.pipsBagChanges} onChange={handleChange}>
-        <option>Yes</option><option>No</option>
-      </select><br /><br />
-      <input name="hospStartDate" type="date" value={formData.hospStartDate} onChange={handleChange} /><br /><br />
-      <input name="ourStartDate" type="date" value={formData.ourStartDate} onChange={handleChange} /><br /><br />
-      <input name="hookupTime" type="time" value={formData.hookupTime} onChange={handleChange} /><br /><br />
-      <button type="submit">Save Patient</button>
+      {renderField('Patient Name (Last, First)', 'name')}
+      {renderField('CPR+ MRN#', 'mrn')}
+      {renderField('DOB', 'dob', 'date')}
+      {renderSelect('Adult/ Pediatric', 'type', ['Adult', 'Pediatric'])}
+      {renderSelect('Status', 'status', ['Active', 'On Hold', 'Discharged', 'Pending'])}
+      {renderSelect('Diagnosis', 'dx', ['Relapse Refractory', 'MRD Positive'])}
+      {renderSelect('Hospital', 'hospital', ['UWMC', 'Swedish', 'Prov Colby', 'FHCC', 'SCH'])}
+      {renderSelect('Pharmacy Team', 'pharmTeam', ['1A', '1E', '2G', '4G'])}
+      {renderSelect('Nursing Team', 'nurseTeam', ['North', 'South', 'Central', 'East'])}
+      {renderSelect('Interpreter Needed', 'interpreter', ['No', 'Yes - Spanish', 'Yes - Cantonese', 'Yes - Mandarin', 'Yes - Korean', 'Yes - Russian', 'Yes - Japanese', 'Yes - Arabic', 'Yes - Vietnamese', 'Yes - Portugese', 'Yes - Other'])}
+      {renderSelect('Reads/Writes in their language', 'readWriteLang', ['Yes', 'No'])}
+      <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+        <label style={{ width: '250px' }}><strong>Notes:</strong></label>
+        <textarea
+          name="notes"
+          value={formData.notes || ''}
+          onChange={handleChange}
+          style={{ width: '300px', height: '80px' }}
+        />
+      </div>
+      {renderSelect('Line Type', 'lineType', ['Port', 'PICC - SL', 'PICC - DL', 'PICC - TL', 'CVC Tunneled - SL', 'CVC Tunneled - DL', 'CVC Tunneled - TL', 'Midline - SL', 'Midline - DL', 'Midline - TL'])}
+      {renderSelect('Extension Added?', 'ext', ['No', 'Yes-7"', 'Yes-14"'])}
+      {renderSelect('Blincyto Cycle', 'cycle', ['Cycle 1', 'Cycle 2', 'Cycle 3', 'Cycle 4', 'Cycle 5'])}
+      {renderSelect('# Days in Cycle', 'daysInCycle', Array.from({ length: 28 }, (_, i) => (i + 1).toString()))}
+      {renderSelect('PIPS doing Bag Changes?', 'pipsBagChanges', ['Yes', 'No'])}
+      {renderField('Hospital Start Date', 'hospStartDate', 'date')}
+      {renderField('Our Start Date', 'ourStartDate', 'date')}
+      {renderField('Hookup Time', 'hookupTime', 'time')}
+
+      <div style={{ marginTop: '20px' }}>
+        <button type="submit" style={{ marginRight: '10px' }}>Save Patient</button>
+        <button type="button" onClick={handleCancel}>Cancel</button>
+      </div>
     </form>
   );
 }

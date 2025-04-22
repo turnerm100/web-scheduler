@@ -1,24 +1,36 @@
-// src/PatientList.js
+// src/InactivePatients.js
 import React, { useEffect, useState } from 'react';
 import { db } from './firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import AddPatient from './AddPatient';
 
-export default function PatientList() {
+export default function InactivePatients() {
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'patients'), (snapshot) => {
-      const active = snapshot.docs
+      const inactive = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(p => p.status === 'Active' || p.status === 'Pending')
+        .filter(p => p.status === 'On Hold' || p.status === 'Discharged')
         .sort((a, b) => a.name.localeCompare(b.name));
-      setPatients(active);
+      setPatients(inactive);
     });
     return () => unsub();
   }, []);
+
+  const handleStatusChange = async (id, newStatus) => {
+    await updateDoc(doc(db, 'patients', id), { status: newStatus });
+  };
+
+  const handleDelete = async (id) => {
+    const confirm = window.confirm('Delete this patient permanently?');
+    if (confirm) {
+      await deleteDoc(doc(db, 'patients', id));
+      alert('Patient deleted.');
+    }
+  };
 
   const handleEdit = (patient) => {
     setSelectedPatient(patient);
@@ -26,21 +38,20 @@ export default function PatientList() {
   };
 
   const handleCloseModal = () => {
-    setShowModal(false);
     setSelectedPatient(null);
+    setShowModal(false);
   };
 
   return (
     <div style={{ padding: 20 }}>
-      <h2>Active & Pending Patients</h2>
+      <h2>Inactive Patients</h2>
       <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%' }}>
         <thead>
           <tr>
             <th>Name</th>
-            <th>MRN</th>
-            <th>DOB</th>
             <th>Status</th>
             <th>Hospital</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -51,10 +62,18 @@ export default function PatientList() {
                   {p.name}
                 </button>
               </td>
-              <td>{p.mrn}</td>
-              <td>{p.dob}</td>
-              <td>{p.status}</td>
+              <td>
+                <select value={p.status} onChange={(e) => handleStatusChange(p.id, e.target.value)}>
+                  <option>On Hold</option>
+                  <option>Discharged</option>
+                  <option>Active</option>
+                  <option>Pending</option>
+                </select>
+              </td>
               <td>{p.hospital}</td>
+              <td>
+                <button onClick={() => handleDelete(p.id)}>Delete</button>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -64,7 +83,7 @@ export default function PatientList() {
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)' }}>
           <div style={{ background: 'white', margin: '5% auto', padding: 20, width: '90%', maxWidth: 800 }}>
             <button onClick={handleCloseModal} style={{ float: 'right' }}>Cancel</button>
-            <AddPatient key={selectedPatient?.id || 'new'} editData={selectedPatient} onClose={handleCloseModal} />
+            <AddPatient key={selectedPatient?.id || 'edit'} editData={selectedPatient} onClose={handleCloseModal} />
           </div>
         </div>
       )}
