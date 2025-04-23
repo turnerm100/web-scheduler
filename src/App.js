@@ -6,7 +6,7 @@ import InactivePatients from './InactivePatients';
 import AddPatient from './AddPatient';
 
 function App() {
-  const [view, setView] = useState('bagSchedule'); // Bag Change Schedule appears first
+  const [view, setView] = useState('bagSchedule');
   const [showAddModal, setShowAddModal] = useState(false);
 
   const renderView = () => {
