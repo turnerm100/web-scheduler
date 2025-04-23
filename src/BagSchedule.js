@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from './firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 import AddPatient from './AddPatient';
-import generateBagSchedule from './utils/generateBagSchedule';
+import { generateBagSchedule } from './utils/generateBagSchedule';
 
 export default function BagSchedule() {
   const [patients, setPatients] = useState([]);
@@ -105,5 +105,7 @@ export default function BagSchedule() {
         </div>
       )}
     </div>
+  );
+}
   );
 }
