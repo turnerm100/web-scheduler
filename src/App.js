@@ -1,4 +1,5 @@
 // src/App.js
+import BagSchedule from './BagSchedule';
 import React, { useState } from 'react';
 import PatientList from './PatientList';
 import InactivePatients from './InactivePatients';
