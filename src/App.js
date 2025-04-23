@@ -11,6 +11,7 @@ function App() {
 
   const renderView = () => {
     if (view === 'inactive') return <InactivePatients />;
+    if (view === 'bagSchedule') return <BagSchedule />;
     return <PatientList />;
   };
 
