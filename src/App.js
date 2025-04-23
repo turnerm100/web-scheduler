@@ -1,12 +1,12 @@
 // src/App.js
-import BagSchedule from './BagSchedule';
 import React, { useState } from 'react';
+import BagSchedule from './BagSchedule';
 import PatientList from './PatientList';
 import InactivePatients from './InactivePatients';
 import AddPatient from './AddPatient';
 
 function App() {
-  const [view, setView] = useState('active');
+  const [view, setView] = useState('bagSchedule');
   const [showAddModal, setShowAddModal] = useState(false);
 
   const renderView = () => {
@@ -31,10 +31,10 @@ function App() {
       }}>
         <h1 style={{ margin: 0 }}>Blincyto Tracking Tool</h1>
         <div>
+          <button onClick={() => setView('bagSchedule')} style={{ marginRight: 10 }}>Bag Change Schedule</button>
           <button onClick={() => setView('active')} style={{ marginRight: 10 }}>Active Patients</button>
           <button onClick={() => setView('inactive')} style={{ marginRight: 10 }}>Inactive/On Hold Patients</button>
-          <button onClick={() => setShowAddModal(true)} style={{ marginRight: 10 }}>Add Patient</button>
-          <button onClick={() => setView('bagSchedule')}>Bag Change Schedule</button>
+          <button onClick={() => setShowAddModal(true)}>Add Patient</button>
         </div>
       </nav>
 
@@ -75,5 +75,8 @@ function App() {
     </div>
   );
 }
+
+export default App;
+
 
 export default App;
