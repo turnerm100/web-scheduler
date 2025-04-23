@@ -164,6 +164,3 @@ export default function BagSchedule() {
     </div>
   );
 }
-
-  );
-}
