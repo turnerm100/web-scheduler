@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import PatientList from './PatientList';
 import InactivePatients from './InactivePatients';
 import AddPatient from './AddPatient';
+import BagSchedule from './BagSchedule';
 
 function App() {
   const [view, setView] = useState('active');
@@ -10,6 +11,7 @@ function App() {
 
   const renderView = () => {
     if (view === 'inactive') return <InactivePatients />;
+    if (view === 'bags') return <BagSchedule />;
     return <PatientList />;
   };
 
@@ -20,6 +22,7 @@ function App() {
         <div>
           <button onClick={() => setView('active')} style={{ marginRight: 10 }}>Active Patients</button>
           <button onClick={() => setView('inactive')} style={{ marginRight: 10 }}>Inactive/On Hold Patients</button>
+          <button onClick={() => setView('bags')} style={{ marginRight: 10 }}>Bag Change Schedule</button>
           <button onClick={() => setShowAddModal(true)}>Add Patient</button>
         </div>
       </nav>
