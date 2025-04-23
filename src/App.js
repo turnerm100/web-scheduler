@@ -19,7 +19,7 @@ function App() {
         <h1 style={{ margin: 0 }}>Blincyto Tracking Tool</h1>
         <div>
           <button onClick={() => setView('active')} style={{ marginRight: 10 }}>Active Patients</button>
-          <button onClick={() => setView('inactive')} style={{ marginRight: 10 }}>Inactive Patients</button>
+          <button onClick={() => setView('inactive')} style={{ marginRight: 10 }}>Inactive/On Hold Patients</button>
           <button onClick={() => setShowAddModal(true)}>Add Patient</button>
         </div>
       </nav>
