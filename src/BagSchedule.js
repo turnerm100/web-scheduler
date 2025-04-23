@@ -105,7 +105,7 @@ export default function BagSchedule() {
               <tr key={patient.id}>
                 <td>
                   <button style={{ color: '#007BFF', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}
-                    onClick={() => setSelectedPatient(patient)}>
+                    onClick={() => setSelectedPatient({ ...patient })}>
                     {patient.name}
                   </button>
                 </td>
@@ -162,5 +162,8 @@ export default function BagSchedule() {
         </div>
       )}
     </div>
+  );
+}
+
   );
 }
