@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, addDoc, updateDoc, Timestamp, doc } from 'firebase/firestore';
 
-export default function AddPatient({ editData, onClose }) {
+export default function AddPatient({ patient, onClose }) {
   const [formData, setFormData] = useState({
     name: '',
     mrn: '',
@@ -28,10 +28,10 @@ export default function AddPatient({ editData, onClose }) {
   });
 
   useEffect(() => {
-    if (editData) {
-      setFormData(editData);
-    }
-  }, [editData]);
+  if (patient) {
+    setFormData(patient);
+  }
+}, [patient]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -40,16 +40,16 @@ export default function AddPatient({ editData, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editData) {
-        await updateDoc(doc(db, 'patients', editData.id), formData);
-        alert('Patient updated successfully!');
-      } else {
-        await addDoc(collection(db, 'patients'), {
-          ...formData,
-          createdAt: Timestamp.now()
-        });
-        alert('Patient added successfully!');
-      }
+      if (patient) {
+  await updateDoc(doc(db, 'patients', patient.id), formData);
+  alert('Patient updated successfully!');
+} else {
+  await addDoc(collection(db, 'patients'), {
+    ...formData,
+    createdAt: Timestamp.now()
+  });
+  alert('Patient added successfully!');
+}
       if (onClose) onClose();
     } catch (error) {
       console.error('Error saving patient:', error);
