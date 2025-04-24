@@ -29,33 +29,43 @@ export default function BagSchedule() {
     const ourDate = new Date(patient.ourStartDate);
     if (isNaN(hospitalDate.getTime()) || isNaN(ourDate.getTime())) return [];
 
-    const remainingDays = totalDays - Math.floor((ourDate - hospitalDate) / (1000 * 60 * 60 * 24));
-    const schedule = [];
-    let daysLeft = remainingDays;
+    let daysLeft = totalDays - Math.floor((ourDate - hospitalDate) / (1000 * 60 * 60 * 24));
+    let schedule = [];
+    let overrideIndex = 0;
+    const overrides = patient.bagOverrides || [];
 
-    if (daysLeft >= 6 && daysLeft % 7 === 6) {
-      schedule.push(3, 3);
-      daysLeft -= 6;
-    } else if (daysLeft >= 5 && daysLeft % 7 === 5) {
-      schedule.push(2, 3);
-      daysLeft -= 5;
-    } else if (daysLeft >= 4 && daysLeft % 7 === 4) {
-      schedule.push(4);
-      daysLeft -= 4;
-    } else if (daysLeft >= 3 && daysLeft % 7 === 3) {
-      schedule.push(3);
-      daysLeft -= 3;
-    } else if (daysLeft >= 2 && daysLeft % 7 === 2) {
-      schedule.push(2);
-      daysLeft -= 2;
-    } else if (daysLeft === 1) {
-      schedule.push(1);
-      daysLeft -= 1;
-    }
+    while (daysLeft > 0) {
+      const override = parseInt(overrides[overrideIndex], 10);
+      let duration = 0;
 
-    while (daysLeft >= 7) {
-      schedule.push(7);
-      daysLeft -= 7;
+      if (!isNaN(override) && override >= 1 && override <= 7) {
+        duration = override;
+      } else {
+        if (daysLeft >= 6 && daysLeft % 7 === 6) {
+          schedule.push(3, 3);
+          daysLeft -= 6;
+          overrideIndex += 2;
+          continue;
+        } else if (daysLeft >= 5 && daysLeft % 7 === 5) {
+          schedule.push(2, 3);
+          daysLeft -= 5;
+          overrideIndex += 2;
+          continue;
+        } else if (daysLeft >= 4 && daysLeft % 7 === 4) {
+          duration = 4;
+        } else if (daysLeft >= 3 && daysLeft % 7 === 3) {
+          duration = 3;
+        } else if (daysLeft >= 2 && daysLeft % 7 === 2) {
+          duration = 2;
+        } else {
+          duration = 1;
+        }
+      }
+
+      if (duration > daysLeft) duration = daysLeft;
+      schedule.push(duration);
+      daysLeft -= duration;
+      overrideIndex++;
     }
 
     return schedule;
@@ -156,8 +166,8 @@ export default function BagSchedule() {
             maxHeight: '90vh',
             overflowY: 'auto'
           }}>
-         <button onClick={() => setSelectedPatient(null)} style={{ float: 'right' }}>Cancel</button>
-            <AddPatient patient={selectedPatient} onClose={() => setSelectedPatient(null)} />
+            <button onClick={() => setSelectedPatient(null)} style={{ float: 'right' }}>Cancel</button>
+            <AddPatient patient={selectedPatient} editData={selectedPatient} onClose={() => setSelectedPatient(null)} />
           </div>
         </div>
       )}
