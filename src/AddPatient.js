@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, addDoc, updateDoc, Timestamp, doc } from 'firebase/firestore';
 
-export default function AddPatient({ patient, onClose }) {
+export default function AddPatient({ editData, onClose }) {
   const [formData, setFormData] = useState({
     name: '',
     mrn: '',
@@ -24,32 +24,39 @@ export default function AddPatient({ patient, onClose }) {
     pipsBagChanges: '',
     hospStartDate: '',
     ourStartDate: '',
-    hookupTime: ''
+    hookupTime: '',
+    bagOverrides: []
   });
 
   useEffect(() => {
-  if (patient) {
-    setFormData(patient);
-  }
-}, [patient]);
+    if (editData) {
+      setFormData({ ...editData, bagOverrides: editData.bagOverrides || [] });
+    }
+  }, [editData]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleOverrideChange = (index, value) => {
+    const updatedOverrides = [...formData.bagOverrides];
+    updatedOverrides[index] = value;
+    setFormData({ ...formData, bagOverrides: updatedOverrides });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (patient) {
-  await updateDoc(doc(db, 'patients', patient.id), formData);
-  alert('Patient updated successfully!');
-} else {
-  await addDoc(collection(db, 'patients'), {
-    ...formData,
-    createdAt: Timestamp.now()
-  });
-  alert('Patient added successfully!');
-}
+      if (editData) {
+        await updateDoc(doc(db, 'patients', editData.id), formData);
+        alert('Patient updated successfully!');
+      } else {
+        await addDoc(collection(db, 'patients'), {
+          ...formData,
+          createdAt: Timestamp.now()
+        });
+        alert('Patient added successfully!');
+      }
       if (onClose) onClose();
     } catch (error) {
       console.error('Error saving patient:', error);
@@ -62,7 +69,7 @@ export default function AddPatient({ patient, onClose }) {
       name: '', mrn: '', dob: '', type: '', status: '', dx: '', hospital: '',
       pharmTeam: '', nurseTeam: '', interpreter: '', readWriteLang: '', notes: '',
       lineType: '', ext: '', cycle: '', daysInCycle: '', pipsBagChanges: '',
-      hospStartDate: '', ourStartDate: '', hookupTime: ''
+      hospStartDate: '', ourStartDate: '', hookupTime: '', bagOverrides: []
     });
     if (onClose) onClose();
   };
@@ -87,6 +94,25 @@ export default function AddPatient({ patient, onClose }) {
         <option value="">Select</option>
         {options.map(opt => <option key={opt}>{opt}</option>)}
       </select>
+    </div>
+  );
+
+  const renderOverrides = () => (
+    <div>
+      <h4>Bag Duration Overrides</h4>
+      {[...Array(8)].map((_, i) => (
+        <div key={i} style={{ marginBottom: '8px' }}>
+          <label>Bag {i + 1} Override:</label>
+          <input
+            type="number"
+            min="1"
+            max="7"
+            value={formData.bagOverrides[i] || ''}
+            onChange={(e) => handleOverrideChange(i, e.target.value)}
+            style={{ marginLeft: '10px', width: '60px' }}
+          />
+        </div>
+      ))}
     </div>
   );
 
@@ -120,6 +146,8 @@ export default function AddPatient({ patient, onClose }) {
       {renderField('Hospital Start Date', 'hospStartDate', 'date')}
       {renderField('Our Start Date', 'ourStartDate', 'date')}
       {renderField('Hookup Time', 'hookupTime', 'time')}
+
+      {renderOverrides()}
 
       <div style={{ marginTop: '20px' }}>
         <button type="submit" style={{ marginRight: '10px' }}>Save Patient</button>
