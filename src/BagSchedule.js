@@ -38,7 +38,7 @@ export default function BagSchedule() {
       const override = parseInt(overrides[overrideIndex], 10);
       let duration = 0;
 
-      if (!isNaN(override) && override >= 1 && override <= 7) {
+      if (!isNaN(override) && [1, 2, 3, 4, 7].includes(override)) {
         duration = override;
       } else {
         if (daysLeft >= 6 && daysLeft % 7 === 6) {
@@ -91,6 +91,15 @@ export default function BagSchedule() {
     return bags;
   };
 
+  const handleOverrideChange = (patientId, index, value) => {
+    setPatients(prev => prev.map(p => {
+      if (p.id !== patientId) return p;
+      const overrides = [...(p.bagOverrides || [])];
+      overrides[index] = value;
+      return { ...p, bagOverrides: overrides };
+    }));
+  };
+
   return (
     <div style={{ padding: 20 }}>
       <h2>Bag Schedule</h2>
@@ -129,7 +138,16 @@ export default function BagSchedule() {
                         <strong>{bag.label}</strong><br />
                         {bag.duration}<br />
                         Start Date: {bag.startDate}<br />
-                        Bag Change Date: {bag.endDate}
+                        Bag Change Date: {bag.endDate}<br />
+                        <input
+                          type="number"
+                          min="1"
+                          max="7"
+                          value={patient.bagOverrides?.[i] || ''}
+                          onChange={(e) => handleOverrideChange(patient.id, i, e.target.value)}
+                          placeholder="Override"
+                          style={{ marginTop: '5px', width: '100%' }}
+                        />
                       </div>
                     ))}
                   </div>
