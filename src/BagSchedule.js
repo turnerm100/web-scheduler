@@ -156,8 +156,8 @@ export default function BagSchedule() {
             maxHeight: '90vh',
             overflowY: 'auto'
           }}>
-          <button onClick={handleCloseModal} style={{ float: 'right' }}>Cancel</button>
-            <AddPatient key={selectedPatient?.id || 'new'} editData={selectedPatient} onClose={handleCloseModal} />
+         <button onClick={() => setSelectedPatient(null)} style={{ float: 'right' }}>Cancel</button>
+            <AddPatient patient={selectedPatient} onClose={() => setSelectedPatient(null)} />
           </div>
         </div>
       )}
