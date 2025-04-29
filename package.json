@@ -1,6 +1,7 @@
 {
   "name": "frontend",
   "version": "0.1.0",
+  "homepage": "https://turnerm100.github.io/web-scheduler",
   "private": true,
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
