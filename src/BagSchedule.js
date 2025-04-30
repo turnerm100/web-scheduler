@@ -13,14 +13,19 @@ export default function BagSchedule() {
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'patients'), snapshot => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
       setPatients(data);
 
       const overrides = {};
       const times = {};
       data.forEach(patient => {
         if (patient.bagOverrides) overrides[patient.id] = patient.bagOverrides;
-        if (patient.bagTimes) times[patient.id] = patient.bagTimes;
+
+        if (patient.bagTimes?.bags) {
+          times[patient.id] = {
+            ...Object.fromEntries(patient.bagTimes.bags.map((t, i) => [i, t])),
+            disconnect: patient.bagTimes.disconnect ?? ''
+          };
+        }
       });
 
       setOverrideEdits(overrides);
@@ -55,7 +60,10 @@ export default function BagSchedule() {
     const times = bagTimeEdits[patientId] || {};
 
     const bagOverrides = Array.from({ length: 8 }, (_, i) => overrides[i] ?? null);
-    const bagTimes = Array.from({ length: 8 }, (_, i) => times[i] ?? '');
+    const bagTimes = {
+      bags: Array.from({ length: 8 }, (_, i) => times[i] ?? ''),
+      disconnect: times['disconnect'] ?? ''
+    };
 
     await updateDoc(doc(db, 'patients', patientId), { bagOverrides, bagTimes });
     alert('Overrides and times saved!');
@@ -120,8 +128,8 @@ export default function BagSchedule() {
         <thead>
           <tr>
             <th>Name</th>
-            <th>Hospital/Initial Date</th>
-            <th>Our Start Date</th>
+            <th>Blincyto Start Date</th>
+            <th>PIPS Start Date</th>
             <th>Cycle Days</th>
             <th>Bag Info</th>
             <th>Disconnect Date</th>
@@ -138,7 +146,7 @@ export default function BagSchedule() {
             const remainingDays = totalDays - daysPassed;
 
             const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
-            const times = bagTimeEdits[patient.id] || patient.bagTimes || [];
+            const times = bagTimeEdits[patient.id] || {};
             const schedule = getBagDurations(remainingDays, overrides);
 
             const bagData = [];
@@ -162,8 +170,17 @@ export default function BagSchedule() {
               current = new Date(endDateObj);
             });
 
-            const disconnectDate = bagData.length > 0 ? bagData[bagData.length - 1].endDate : '';
+            const lastBag = bagData[bagData.length - 1];
+            const disconnectDate = lastBag ? lastBag.endDate : '';
+            const disconnectDateObj = lastBag ? lastBag.endDateObj : null;
+            const isDisconnectToday = disconnectDate === formatDate(new Date());
+            const isDisconnectTomorrow = disconnectDateObj && isTomorrow(disconnectDateObj);
+
             const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
+
+            let disconnectCellBg = 'transparent';
+            if (isDisconnectToday) disconnectCellBg = '#92D050';
+            else if (isDisconnectTomorrow) disconnectCellBg = '#E97132';
 
             return (
               <tr key={patient.id}>
@@ -185,11 +202,8 @@ export default function BagSchedule() {
                       const isTodayDiff = isTodayAndDifferentFromPrevious(bag, bagData[i - 1]);
 
                       let backgroundColor = 'transparent';
-                      if (isTodayDiff) {
-                        backgroundColor = '#92D050'; // Green
-                      } else if (isTomorrowBag && !showPtDoingBagsAlert) {
-                        backgroundColor = '#E97132'; // Orange if tomorrow and not Pt doing bags
-                      }
+                      if (isTodayDiff) backgroundColor = '#92D050';
+                      else if (isTomorrowBag && !showPtDoingBagsAlert) backgroundColor = '#E97132';
 
                       return (
                         <div
@@ -207,23 +221,15 @@ export default function BagSchedule() {
                           Start: {bag.startDate}<br />
 
                           {isTodayDiff ? (
-                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>
-                              Pump reprogram due today.
-                            </div>
+                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>Pump reprogram due today.</div>
                           ) : showPtDoingBagsAlert ? (
-                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>
-                              Pt/CG doing bag changes
-                            </div>
+                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>Pt/CG doing bag changes.</div>
                           ) : isTomorrowBag ? (
-                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>
-                              Call pt/cg today for remaining time on pump. Calculate and log tomorrow’s bag change/disconnect time.
-                            </div>
+                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>Call pt/cg today for remaining time on pump.</div>
                           ) : null}
 
                           <div style={{ marginTop: '8px' }}>
-                            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
-                              Bag Duration Override
-                            </div>
+                            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>Bag Duration Override</div>
                             <select
                               value={overrides[i] ?? ''}
                               onChange={(e) => handleOverrideChange(patient.id, i, e.target.value)}
@@ -235,9 +241,7 @@ export default function BagSchedule() {
                               ))}
                             </select>
 
-                            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
-                              Bag Change/Disconnect due at:
-                            </div>
+                            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>Bag change due at:</div>
                             <input
                               type="time"
                               value={times[i] ?? ''}
@@ -250,11 +254,33 @@ export default function BagSchedule() {
                     })}
                   </div>
                 </td>
-                <td>{disconnectDate}</td>
+                <td style={{
+  backgroundColor: disconnectCellBg,
+  fontWeight: 'bold',
+  maxWidth: '200px',
+  width: '200px',
+  overflowWrap: 'break-word',
+  wordWrap: 'break-word'
+}}>
+                  <div>{disconnectDate}</div>
+                  {isDisconnectTomorrow && (
+                    <div style={{ color: 'black', fontWeight: 'bold', marginTop: '6px' }}>
+                      <span style={{ fontSize: '12px', whiteSpace: 'pre-line' }}>Call Pt/CG today to determine remaining time on the pump.
+Calculate and log disconnect time below.</span>
+                    </div>
+                  )}
+                  <div style={{ marginTop: '6px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>Disconnect time:</div>
+                    <input
+                      type="time"
+                      value={times['disconnect'] ?? ''}
+                      onChange={(e) => handleTimeChange(patient.id, 'disconnect', e.target.value)}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </td>
                 <td>
-                  <button onClick={() => handleSaveOverrides(patient.id)}>
-                    Save Changes
-                  </button>
+                  <button onClick={() => handleSaveOverrides(patient.id)}>Save Changes</button>
                 </td>
               </tr>
             );
