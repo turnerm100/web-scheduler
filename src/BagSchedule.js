@@ -1,5 +1,5 @@
 // src/BagSchedule.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { db } from './firebase';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import AddPatient from './AddPatient';
@@ -121,23 +121,63 @@ export default function BagSchedule() {
     return bags;
   };
 
+  const getPatientHighlightRank = (patient) => {
+    const totalDays = parseInt(patient.daysInCycle, 10);
+    const hospitalDate = parseLocalDate(patient.hospStartDate);
+    const ourDate = parseLocalDate(patient.ourStartDate);
+    let daysPassed = Math.floor((ourDate - hospitalDate) / (1000 * 60 * 60 * 24));
+    daysPassed = daysPassed < 0 ? 0 : daysPassed;
+    const remainingDays = totalDays - daysPassed;
+
+    const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
+    const schedule = getBagDurations(remainingDays, overrides);
+    const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
+
+    let current = new Date(ourDate);
+    for (let i = 0; i < schedule.length; i++) {
+      const startDateObj = new Date(current);
+      const duration = schedule[i];
+
+      const today = new Date();
+      const tomorrow = new Date();
+      tomorrow.setDate(today.getDate() + 1);
+
+      const isToday = startDateObj.toDateString() === today.toDateString();
+      const isTomorrow = startDateObj.toDateString() === tomorrow.toDateString();
+
+      if (i === 0 && isToday) return 0; // First bag green
+      if (i === 0 && isTomorrow && !showPtDoingBagsAlert) return 1; // First bag red/orange
+
+      if (i > 0 && isToday && schedule[i] !== schedule[i - 1]) return 0;
+      if (isTomorrow && !showPtDoingBagsAlert) return 1;
+
+      current.setDate(current.getDate() + duration);
+    }
+
+    return 2;
+  };
+
+  const sortedPatients = useMemo(() => {
+    return [...patients].sort((a, b) => getPatientHighlightRank(a) - getPatientHighlightRank(b));
+  }, [patients, overrideEdits]);
+
   return (
     <div style={{ padding: 20 }}>
       <h2>Bag Schedule</h2>
       <table border="1" cellPadding="8" style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Blincyto Start Date</th>
-            <th>PIPS Start Date</th>
-            <th>Cycle Days</th>
+      <thead>
+  <tr>
+    <th style={{ width: '75px' }}>Name</th>
+    <th style={{ width: '75px' }}>Blincyto Start Date</th>
+    <th style={{ width: '75px' }}>PIPS Start Date</th>
+    <th style={{ width: '25px' }}>Cycle Days</th>
             <th>Bag Info</th>
             <th>Disconnect Date</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {patients.filter(p => p.hospStartDate && p.ourStartDate).map(patient => {
+          {sortedPatients.filter(p => p.hospStartDate && p.ourStartDate).map(patient => {
             const totalDays = parseInt(patient.daysInCycle, 10);
             const hospitalDate = parseLocalDate(patient.hospStartDate);
             const ourDate = parseLocalDate(patient.ourStartDate);
@@ -184,26 +224,54 @@ export default function BagSchedule() {
 
             return (
               <tr key={patient.id}>
-                <td>
-                  <button
-                    style={{ border: 'none', background: 'none', color: 'blue', cursor: 'pointer', textDecoration: 'underline' }}
-                    onClick={() => setSelectedPatient(patient)}
-                  >
-                    {patient.name}
-                  </button>
-                </td>
-                <td>{formatDate(parseLocalDate(patient.hospStartDate))}</td>
-                <td>{formatDate(parseLocalDate(patient.ourStartDate))}</td>
-                <td>{patient.daysInCycle}</td>
+                <td style={{ maxWidth: '160px', width: '160px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+  <button
+    style={{ border: 'none', background: 'none', color: 'blue', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+    onClick={() => setSelectedPatient(patient)}
+  >
+    {(() => {
+      let first = '', last = '';
+      const nameParts = patient.name.includes(',') ? patient.name.split(',') : patient.name.split(' ');
+      if (nameParts.length >= 2) {
+        [last, first] = patient.name.includes(',') ? [nameParts[0], nameParts[1].trim()] : [nameParts.slice(-1)[0], nameParts.slice(0, -1).join(' ')];
+      } else {
+        last = patient.name;
+      }
+      return (
+        <>
+          <div style={{ fontWeight: 'bold' }}>{last}</div>
+          <div>{first}</div>
+        </>
+      );
+    })()}
+  </button>
+</td>
+<td style={{ maxWidth: '75px', width: '75px' }}>{formatDate(hospitalDate)}</td>
+<td style={{ maxWidth: '75px', width: '75px' }}>{formatDate(ourDate)}</td>
+<td style={{ maxWidth: '25px', width: '25px' }}>{patient.daysInCycle}</td>
                 <td>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     {bagData.map((bag, i) => {
                       const isTomorrowBag = isTomorrow(bag.startDateObj);
+                      const isToday = bag.startDateObj.toDateString() === new Date().toDateString();
                       const isTodayDiff = isTodayAndDifferentFromPrevious(bag, bagData[i - 1]);
 
                       let backgroundColor = 'transparent';
-                      if (isTodayDiff) backgroundColor = '#92D050';
-                      else if (isTomorrowBag && !showPtDoingBagsAlert) backgroundColor = '#E97132';
+                      let bagAlert = null;
+
+                      if (i === 0 && isToday) {
+                        backgroundColor = '#92D050';
+                        bagAlert = "First bag hookup. Please enter hookup time.";
+                      } else if (i === 0 && isTomorrowBag) {
+                        backgroundColor = '#E97132';
+                        bagAlert = "Confirm hookup time w/ hospital or Patient.";
+                      } else if (isTodayDiff) {
+                        backgroundColor = '#92D050';
+                        bagAlert = "Pump reprogram due today.";
+                      } else if (isTomorrowBag && !showPtDoingBagsAlert) {
+                        backgroundColor = '#E97132';
+                        bagAlert = "Call pt/cg today for remaining time on pump.";
+                      }
 
                       return (
                         <div
@@ -219,14 +287,11 @@ export default function BagSchedule() {
                           <strong>{bag.label}</strong><br />
                           {bag.duration}<br />
                           Start: {bag.startDate}<br />
-
-                          {isTodayDiff ? (
-                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>Pump reprogram due today.</div>
-                          ) : showPtDoingBagsAlert ? (
-                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>Pt/CG doing bag changes.</div>
-                          ) : isTomorrowBag ? (
-                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>Call pt/cg today for remaining time on pump.</div>
-                          ) : null}
+                          {bagAlert && (
+                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>
+                              {bagAlert}
+                            </div>
+                          )}
 
                           <div style={{ marginTop: '8px' }}>
                             <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>Bag Duration Override</div>
@@ -255,18 +320,19 @@ export default function BagSchedule() {
                   </div>
                 </td>
                 <td style={{
-  backgroundColor: disconnectCellBg,
-  fontWeight: 'bold',
-  maxWidth: '200px',
-  width: '200px',
-  overflowWrap: 'break-word',
-  wordWrap: 'break-word'
-}}>
+                  backgroundColor: disconnectCellBg,
+                  fontWeight: 'bold',
+                  maxWidth: '200px',
+                  width: '200px',
+                  overflowWrap: 'break-word'
+                }}>
                   <div>{disconnectDate}</div>
                   {isDisconnectTomorrow && (
                     <div style={{ color: 'black', fontWeight: 'bold', marginTop: '6px' }}>
-                      <span style={{ fontSize: '12px', whiteSpace: 'pre-line' }}>Call Pt/CG today to determine remaining time on the pump.
-Calculate and log disconnect time below.</span>
+                      <span style={{ fontSize: '12px', whiteSpace: 'pre-line' }}>
+                        Call Pt/CG today to determine remaining time on the pump.
+                        Calculate and log disconnect time below.
+                      </span>
                     </div>
                   )}
                   <div style={{ marginTop: '6px' }}>
