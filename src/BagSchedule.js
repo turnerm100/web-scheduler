@@ -163,18 +163,18 @@ export default function BagSchedule() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h2>Bag Schedule</h2>
+      <h2>Blincyto Bag Change Schedule</h2>
       <table border="1" cellPadding="8" style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
   <tr style={{ position: 'sticky', top: '60px', backgroundColor: '#f1f1f1', zIndex: 1 }}>
-    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>Name</th>
-    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>Blincyto Start Date</th>
-    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>PIPS Start Date</th>
-    <th style={{ width: '25px', backgroundColor: '#f1f1f1' }}>Cycle Days</th>
-    <th style={{ backgroundColor: '#f1f1f1' }}>Bag Info</th>
-    <th style={{ backgroundColor: '#f1f1f1' }}>Disconnect Date</th>
-    <th style={{ backgroundColor: '#f1f1f1' }}>Actions</th>
-    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>Printable Bag Change Schedule</th>
+    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>Patient Name:</th>
+    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>Blincyto Start Date:</th>
+    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>PIPS Start Date:</th>
+    <th style={{ width: '25px', backgroundColor: '#f1f1f1' }}>Cycle Days:</th>
+    <th style={{ backgroundColor: '#f1f1f1' }}>Bag Info:</th>
+    <th style={{ backgroundColor: '#f1f1f1' }}>Disconnect Date:</th>
+    <th style={{ backgroundColor: '#f1f1f1' }}>Actions:</th>
+    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>Printable Bag Change Schedule:</th>
   </tr>
 </thead>
         <tbody>
