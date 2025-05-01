@@ -166,16 +166,17 @@ export default function BagSchedule() {
       <h2>Bag Schedule</h2>
       <table border="1" cellPadding="8" style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
-  <tr>
-    <th style={{ width: '75px' }}>Name</th>
-    <th style={{ width: '75px' }}>Blincyto Start Date</th>
-    <th style={{ width: '75px' }}>PIPS Start Date</th>
-    <th style={{ width: '25px' }}>Cycle Days</th>
-            <th>Bag Info</th>
-            <th>Disconnect Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+  <tr style={{ position: 'sticky', top: '60px', backgroundColor: '#f1f1f1', zIndex: 1 }}>
+    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>Name</th>
+    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>Blincyto Start Date</th>
+    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>PIPS Start Date</th>
+    <th style={{ width: '25px', backgroundColor: '#f1f1f1' }}>Cycle Days</th>
+    <th style={{ backgroundColor: '#f1f1f1' }}>Bag Info</th>
+    <th style={{ backgroundColor: '#f1f1f1' }}>Disconnect Date</th>
+    <th style={{ backgroundColor: '#f1f1f1' }}>Actions</th>
+    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>Printable Bag Change Schedule</th>
+  </tr>
+</thead>
         <tbody>
           {sortedPatients.filter(p => p.hospStartDate && p.ourStartDate).map(patient => {
             const totalDays = parseInt(patient.daysInCycle, 10);
@@ -239,8 +240,8 @@ export default function BagSchedule() {
       }
       return (
         <>
-          <div style={{ fontWeight: 'bold' }}>{last}</div>
-          <div>{first}</div>
+         <div style={{ fontWeight: 'bold', fontSize: '22px' }}>{last}</div>
+         <div style={{ fontSize: '22px' }}>{first}</div>
         </>
       );
     })()}
@@ -320,13 +321,14 @@ export default function BagSchedule() {
                   </div>
                 </td>
                 <td style={{
-                  backgroundColor: disconnectCellBg,
-                  fontWeight: 'bold',
-                  maxWidth: '200px',
-                  width: '200px',
-                  overflowWrap: 'break-word'
-                }}>
-                  <div>{disconnectDate}</div>
+  backgroundColor: disconnectCellBg,
+  fontWeight: 'bold',
+  maxWidth: '150px',
+  width: '150px',
+  overflowWrap: 'break-word'
+}}>
+  <div style={{ fontSize: '14px', marginBottom: '4px' }}>Cycle Completion</div>
+  <div>{disconnectDate}</div>
                   {isDisconnectTomorrow && (
                     <div style={{ color: 'black', fontWeight: 'bold', marginTop: '6px' }}>
                       <span style={{ fontSize: '12px', whiteSpace: 'pre-line' }}>
@@ -348,6 +350,14 @@ export default function BagSchedule() {
                 <td>
                   <button onClick={() => handleSaveOverrides(patient.id)}>Save Changes</button>
                 </td>
+                <td>
+  <button
+    onClick={() => window.open(`/print-schedule/${patient.id}`, '_blank')}
+    style={{ cursor: 'pointer' }}
+  >
+    Print Schedule
+  </button>
+</td>
               </tr>
             );
           })}
