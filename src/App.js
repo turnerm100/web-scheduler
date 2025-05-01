@@ -8,6 +8,8 @@ import InactivePatients from './InactivePatients';
 import AddPatient from './AddPatient';
 import PrintSchedule from './PrintSchedule';
 
+import './BagSchedule.css'; // Import the CSS that contains .rounded-button
+
 function App() {
   const [view, setView] = useState('bagSchedule');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -39,10 +41,33 @@ function App() {
               }}>
                 <h1 style={{ margin: 0 }}>Blincyto Tracking Tool</h1>
                 <div>
-                  <button onClick={() => setView('bagSchedule')} style={{ marginRight: 10 }}>Bag Change Schedule</button>
-                  <button onClick={() => setView('active')} style={{ marginRight: 10 }}>Active Patients</button>
-                  <button onClick={() => setView('inactive')} style={{ marginRight: 10 }}>Inactive/On Hold Patients</button>
-                  <button onClick={() => setShowAddModal(true)}>Add Patient</button>
+                  <button
+                    className="rounded-button"
+                    onClick={() => setView('bagSchedule')}
+                    style={{ marginRight: 10 }}
+                  >
+                    Bag Change Schedule
+                  </button>
+                  <button
+                    className="rounded-button"
+                    onClick={() => setView('active')}
+                    style={{ marginRight: 10 }}
+                  >
+                    Active Patients
+                  </button>
+                  <button
+                    className="rounded-button"
+                    onClick={() => setView('inactive')}
+                    style={{ marginRight: 10 }}
+                  >
+                    Inactive/On Hold Patients
+                  </button>
+                  <button
+                    className="rounded-button"
+                    onClick={() => setShowAddModal(true)}
+                  >
+                    Add Patient
+                  </button>
                 </div>
               </nav>
 
@@ -75,7 +100,13 @@ function App() {
                     maxHeight: '90vh',
                     overflowY: 'auto'
                   }}>
-                    <button onClick={() => setShowAddModal(false)} style={{ float: 'right' }}>Cancel</button>
+                    <button
+                      className="rounded-button"
+                      style={{ float: 'right' }}
+                      onClick={() => setShowAddModal(false)}
+                    >
+                      Cancel
+                    </button>
                     <AddPatient onClose={() => setShowAddModal(false)} />
                   </div>
                 </div>

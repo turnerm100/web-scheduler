@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { db } from './firebase';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import AddPatient from './AddPatient';
+import './BagSchedule.css';
 
 export default function BagSchedule() {
   const [patients, setPatients] = useState([]);
@@ -145,9 +146,8 @@ export default function BagSchedule() {
       const isToday = startDateObj.toDateString() === today.toDateString();
       const isTomorrow = startDateObj.toDateString() === tomorrow.toDateString();
 
-      if (i === 0 && isToday) return 0; // First bag green
-      if (i === 0 && isTomorrow && !showPtDoingBagsAlert) return 1; // First bag red/orange
-
+      if (i === 0 && isToday) return 0;
+      if (i === 0 && isTomorrow && !showPtDoingBagsAlert) return 1;
       if (i > 0 && isToday && schedule[i] !== schedule[i - 1]) return 0;
       if (isTomorrow && !showPtDoingBagsAlert) return 1;
 
@@ -165,18 +165,18 @@ export default function BagSchedule() {
     <div style={{ padding: 20 }}>
       <h2>Blincyto Bag Change Schedule</h2>
       <table border="1" cellPadding="8" style={{ width: '100%', borderCollapse: 'collapse' }}>
-      <thead>
-  <tr style={{ position: 'sticky', top: '60px', backgroundColor: '#f1f1f1', zIndex: 1 }}>
-    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>Patient Name:</th>
-    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>Blincyto Start Date:</th>
-    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>PIPS Start Date:</th>
-    <th style={{ width: '25px', backgroundColor: '#f1f1f1' }}>Cycle Days:</th>
-    <th style={{ backgroundColor: '#f1f1f1' }}>Bag Info:</th>
-    <th style={{ backgroundColor: '#f1f1f1' }}>Disconnect Date:</th>
-    <th style={{ backgroundColor: '#f1f1f1' }}>Actions:</th>
-    <th style={{ width: '75px', backgroundColor: '#f1f1f1' }}>Printable Bag Change Schedule:</th>
-  </tr>
-</thead>
+        <thead>
+          <tr style={{ position: 'sticky', top: '60px', backgroundColor: '#f1f1f1', zIndex: 1 }}>
+            <th>Patient Name:</th>
+            <th>Blincyto Start Date:</th>
+            <th>PIPS Start Date:</th>
+            <th>Cycle Days:</th>
+            <th>Bag Info:</th>
+            <th>Disconnect Date:</th>
+            <th>Actions:</th>
+            <th>Printable Bag Change Schedule:</th>
+          </tr>
+        </thead>
         <tbody>
           {sortedPatients.filter(p => p.hospStartDate && p.ourStartDate).map(patient => {
             const totalDays = parseInt(patient.daysInCycle, 10);
@@ -216,7 +216,6 @@ export default function BagSchedule() {
             const disconnectDateObj = lastBag ? lastBag.endDateObj : null;
             const isDisconnectToday = disconnectDate === formatDate(new Date());
             const isDisconnectTomorrow = disconnectDateObj && isTomorrow(disconnectDateObj);
-
             const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
 
             let disconnectCellBg = 'transparent';
@@ -225,139 +224,115 @@ export default function BagSchedule() {
 
             return (
               <tr key={patient.id}>
-                <td style={{ maxWidth: '160px', width: '160px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
-  <button
-    style={{ border: 'none', background: 'none', color: 'blue', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
-    onClick={() => setSelectedPatient(patient)}
-  >
-    {(() => {
-      let first = '', last = '';
-      const nameParts = patient.name.includes(',') ? patient.name.split(',') : patient.name.split(' ');
-      if (nameParts.length >= 2) {
-        [last, first] = patient.name.includes(',') ? [nameParts[0], nameParts[1].trim()] : [nameParts.slice(-1)[0], nameParts.slice(0, -1).join(' ')];
-      } else {
-        last = patient.name;
+                <td>
+                  <button
+                    className="rounded-link-button"
+                    onClick={() => setSelectedPatient(patient)}
+                  >
+                    {patient.name}
+                  </button>
+                </td>
+                <td>{formatDate(hospitalDate)}</td>
+                <td>{formatDate(ourDate)}</td>
+                <td>{patient.daysInCycle}</td>
+                <td>
+  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+    {bagData.map((bag, i) => {
+      const isTomorrowBag = isTomorrow(bag.startDateObj);
+      const isToday = bag.startDateObj.toDateString() === new Date().toDateString();
+      const isTodayDiff = isTodayAndDifferentFromPrevious(bag, bagData[i - 1]);
+
+      let backgroundColor = 'transparent';
+      let bagAlert = null;
+
+      if (i === 0 && isToday) {
+        backgroundColor = '#92D050';
+        bagAlert = "First bag hookup. Please enter hookup time.";
+      } else if (i === 0 && isTomorrowBag) {
+        backgroundColor = '#E97132';
+        bagAlert = "Confirm hookup time w/ hospital or Patient.";
+      } else if (isTodayDiff) {
+        backgroundColor = '#92D050';
+        bagAlert = "Pump reprogram due today.";
+      } else if (isTomorrowBag && !showPtDoingBagsAlert) {
+        backgroundColor = '#E97132';
+        bagAlert = "Call pt/cg today for remaining time on pump.";
       }
+
       return (
-        <>
-         <div style={{ fontWeight: 'bold', fontSize: '22px' }}>{last}</div>
-         <div style={{ fontSize: '22px' }}>{first}</div>
-        </>
+        <div
+          key={i}
+          style={{
+            border: '2px solid #ccc',
+            padding: '8px',
+            borderRadius: '5px',
+            width: '160px',
+            backgroundColor
+          }}
+        >
+          <strong>{bag.label}</strong><br />
+          {bag.duration}<br />
+          Start: {bag.startDate}<br />
+          {bagAlert && (
+            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>
+              {bagAlert}
+            </div>
+          )}
+          <div style={{ marginTop: '8px' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
+              Bag Duration Override
+            </div>
+            <select
+              value={overrides[i] ?? ''}
+              onChange={(e) => handleOverrideChange(patient.id, i, e.target.value)}
+              style={{ width: '100%', marginBottom: '10px' }}
+            >
+              <option value="">Auto</option>
+              {[1, 2, 3, 4, 7].map(day => (
+                <option key={day} value={day}>{day} day</option>
+              ))}
+            </select>
+
+            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
+              Bag change due at:
+            </div>
+            <input
+              type="time"
+              value={times[i] ?? ''}
+              onChange={(e) => handleTimeChange(patient.id, i, e.target.value)}
+              style={{ width: '100%' }}
+            />
+          </div>
+        </div>
       );
-    })()}
-  </button>
+    })}
+  </div>
 </td>
-<td style={{ maxWidth: '75px', width: '75px' }}>{formatDate(hospitalDate)}</td>
-<td style={{ maxWidth: '75px', width: '75px' }}>{formatDate(ourDate)}</td>
-<td style={{ maxWidth: '25px', width: '25px' }}>{patient.daysInCycle}</td>
-                <td>
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    {bagData.map((bag, i) => {
-                      const isTomorrowBag = isTomorrow(bag.startDateObj);
-                      const isToday = bag.startDateObj.toDateString() === new Date().toDateString();
-                      const isTodayDiff = isTodayAndDifferentFromPrevious(bag, bagData[i - 1]);
-
-                      let backgroundColor = 'transparent';
-                      let bagAlert = null;
-
-                      if (i === 0 && isToday) {
-                        backgroundColor = '#92D050';
-                        bagAlert = "First bag hookup. Please enter hookup time.";
-                      } else if (i === 0 && isTomorrowBag) {
-                        backgroundColor = '#E97132';
-                        bagAlert = "Confirm hookup time w/ hospital or Patient.";
-                      } else if (isTodayDiff) {
-                        backgroundColor = '#92D050';
-                        bagAlert = "Pump reprogram due today.";
-                      } else if (isTomorrowBag && !showPtDoingBagsAlert) {
-                        backgroundColor = '#E97132';
-                        bagAlert = "Call pt/cg today for remaining time on pump.";
-                      }
-
-                      return (
-                        <div
-                          key={i}
-                          style={{
-                            border: '2px solid #ccc',
-                            padding: '8px',
-                            borderRadius: '5px',
-                            width: '160px',
-                            backgroundColor
-                          }}
-                        >
-                          <strong>{bag.label}</strong><br />
-                          {bag.duration}<br />
-                          Start: {bag.startDate}<br />
-                          {bagAlert && (
-                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>
-                              {bagAlert}
-                            </div>
-                          )}
-
-                          <div style={{ marginTop: '8px' }}>
-                            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>Bag Duration Override</div>
-                            <select
-                              value={overrides[i] ?? ''}
-                              onChange={(e) => handleOverrideChange(patient.id, i, e.target.value)}
-                              style={{ width: '100%', marginBottom: '10px' }}
-                            >
-                              <option value="">Auto</option>
-                              {[1, 2, 3, 4, 7].map(day => (
-                                <option key={day} value={day}>{day} day</option>
-                              ))}
-                            </select>
-
-                            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>Bag change due at:</div>
-                            <input
-                              type="time"
-                              value={times[i] ?? ''}
-                              onChange={(e) => handleTimeChange(patient.id, i, e.target.value)}
-                              style={{ width: '100%' }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </td>
-                <td style={{
-  backgroundColor: disconnectCellBg,
-  fontWeight: 'bold',
-  maxWidth: '150px',
-  width: '150px',
-  overflowWrap: 'break-word'
-}}>
-  <div style={{ fontSize: '14px', marginBottom: '4px' }}>Cycle Completion</div>
-  <div>{disconnectDate}</div>
-                  {isDisconnectTomorrow && (
-                    <div style={{ color: 'black', fontWeight: 'bold', marginTop: '6px' }}>
-                      <span style={{ fontSize: '12px', whiteSpace: 'pre-line' }}>
-                        Call Pt/CG today to determine remaining time on the pump.
-                        Calculate and log disconnect time below.
-                      </span>
-                    </div>
-                  )}
-                  <div style={{ marginTop: '6px' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>Disconnect time:</div>
-                    <input
-                      type="time"
-                      value={times['disconnect'] ?? ''}
-                      onChange={(e) => handleTimeChange(patient.id, 'disconnect', e.target.value)}
-                      style={{ width: '100%' }}
-                    />
-                  </div>
+                <td style={{ backgroundColor: disconnectCellBg }}>
+                  <div>Cycle Completion</div>
+                  <div>{disconnectDate}</div>
+                  <input
+                    type="time"
+                    value={times['disconnect'] ?? ''}
+                    onChange={(e) => handleTimeChange(patient.id, 'disconnect', e.target.value)}
+                  />
                 </td>
                 <td>
-                  <button onClick={() => handleSaveOverrides(patient.id)}>Save Changes</button>
+                  <button
+                    className="rounded-button"
+                    onClick={() => handleSaveOverrides(patient.id)}
+                  >
+                    Save Changes
+                  </button>
                 </td>
                 <td>
-  <button
-    onClick={() => window.open(`/print-schedule/${patient.id}`, '_blank')}
-    style={{ cursor: 'pointer' }}
-  >
-    Print Schedule
-  </button>
-</td>
+                  <button
+                    className="rounded-button"
+                    onClick={() => window.open(`/print-schedule/${patient.id}`, '_blank')}
+                  >
+                    Print Schedule
+                  </button>
+                </td>
               </tr>
             );
           })}
@@ -365,17 +340,20 @@ export default function BagSchedule() {
       </table>
 
       {selectedPatient && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-          background: 'rgba(0,0,0,0.6)', overflowY: 'auto', zIndex: 1000,
-          display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '40px'
-        }}>
-          <div style={{
-            background: '#fff', padding: '20px', width: '90%', maxWidth: '800px',
-            borderRadius: '8px', maxHeight: '90vh', overflowY: 'auto'
-          }}>
-            <button style={{ float: 'right' }} onClick={() => setSelectedPatient(null)}>Cancel</button>
-            <AddPatient patient={selectedPatient} editData={selectedPatient} onClose={() => setSelectedPatient(null)} />
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <button
+              className="rounded-button"
+              style={{ float: 'right' }}
+              onClick={() => setSelectedPatient(null)}
+            >
+              Cancel
+            </button>
+            <AddPatient
+              patient={selectedPatient}
+              editData={selectedPatient}
+              onClose={() => setSelectedPatient(null)}
+            />
           </div>
         </div>
       )}

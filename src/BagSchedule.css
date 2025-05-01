@@ -1,0 +1,66 @@
+/* BagSchedule.css */
+.rounded-button {
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    background-color: #007BFF;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .rounded-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .rounded-link-button {
+    background: none;
+    color: blue;
+    text-decoration: underline;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  /* Optional modal styling */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    overflow-y: auto;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+  
+  .modal-content {
+    background: white;
+    padding: 20px;
+    width: 90%;
+    max-width: 800px;
+    border-radius: 8px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .white-rounded-button {
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 8px 14px;
+    background-color: white;
+    color: black;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  
+  .white-rounded-button:hover {
+    background-color: #f0f0f0;
+  }
+  
