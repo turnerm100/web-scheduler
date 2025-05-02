@@ -1,3 +1,4 @@
+// testBagLogic.js
 import { generateBagSchedule } from './utils/generateBagSchedule';
 
 const result = generateBagSchedule({

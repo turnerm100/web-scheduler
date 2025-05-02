@@ -35,11 +35,14 @@ function App() {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: 10,
-                background: '#153D64',
+                background: '#215C98',
                 color: 'white',
                 boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
               }}>
-                <h1 style={{ margin: 0 }}>Blincyto Tracking Tool</h1>
+                 <h1 style={{ margin: 0, lineHeight: 1.3, fontSize: '16px', textAlign: 'center' }}>
+  Providence Infusion and Pharmacy Services<br />
+  Blincyto Tracking Tool
+</h1>
                 <div>
                   <button
                     className="rounded-button"
@@ -82,7 +85,7 @@ function App() {
                   left: 0,
                   width: '100%',
                   height: '100%',
-                  background: 'rgba(0,0,0,0.5)',
+                  background: 'rgba(28, 66, 203, 0.63)',
                   overflowY: 'auto',
                   zIndex: 1000,
                   display: 'flex',

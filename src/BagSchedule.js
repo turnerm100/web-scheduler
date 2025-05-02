@@ -166,7 +166,7 @@ export default function BagSchedule() {
       <h2>Blincyto Bag Change Schedule</h2>
       <table border="1" cellPadding="8" style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
-          <tr style={{ position: 'sticky', top: '60px', backgroundColor: '#f1f1f1', zIndex: 1 }}>
+          <tr style={{ position: 'sticky', top: '50px', backgroundColor: '#f1f1f1', zIndex: 2 }}>
             <th>Patient Name:</th>
             <th>Blincyto Start Date:</th>
             <th>PIPS Start Date:</th>
@@ -236,80 +236,95 @@ export default function BagSchedule() {
                 <td>{formatDate(ourDate)}</td>
                 <td>{patient.daysInCycle}</td>
                 <td>
-  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-    {bagData.map((bag, i) => {
-      const isTomorrowBag = isTomorrow(bag.startDateObj);
-      const isToday = bag.startDateObj.toDateString() === new Date().toDateString();
-      const isTodayDiff = isTodayAndDifferentFromPrevious(bag, bagData[i - 1]);
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {bagData.map((bag, i) => {
+                      const isTomorrowBag = isTomorrow(bag.startDateObj);
+                      const isToday = bag.startDateObj.toDateString() === new Date().toDateString();
+                      const isTodayDiff = isTodayAndDifferentFromPrevious(bag, bagData[i - 1]);
 
-      let backgroundColor = 'transparent';
-      let bagAlert = null;
+                      let backgroundColor = 'transparent';
+                      let bagAlert = null;
 
-      if (i === 0 && isToday) {
-        backgroundColor = '#92D050';
-        bagAlert = "First bag hookup. Please enter hookup time.";
-      } else if (i === 0 && isTomorrowBag) {
-        backgroundColor = '#E97132';
-        bagAlert = "Confirm hookup time w/ hospital or Patient.";
-      } else if (isTodayDiff) {
-        backgroundColor = '#92D050';
-        bagAlert = "Pump reprogram due today.";
-      } else if (isTomorrowBag && !showPtDoingBagsAlert) {
-        backgroundColor = '#E97132';
-        bagAlert = "Call pt/cg today for remaining time on pump.";
-      }
+                      if (
+                        i > 0 &&
+                        bag.durationDays < bagData[i - 1].durationDays &&
+                        isTomorrowBag
+                      ) {
+                        backgroundColor = '#FF4C4C'; // Red highlight
+                        bagAlert = "RN visit needed to aspirate line before bag change";
+                      }
+                       else if (i === 0 && isToday) {
+                        backgroundColor = '#92D050';
+                        bagAlert = "First bag hookup. Please enter hookup time.";
+                      } else if (isTodayDiff) {
+                        backgroundColor = '#92D050';
+                        bagAlert = "Pump reprogram due today.";
+                      } else if (i === 0 && isTomorrowBag && !showPtDoingBagsAlert) {
+                        backgroundColor = '#E97132';
+                        bagAlert = "Confirm hookup time w/ hospital or Patient.";
+                      } else if (isTomorrowBag && !showPtDoingBagsAlert) {
+                        backgroundColor = '#E97132';
+                        bagAlert = "Call pt/cg today for remaining time on pump. Calculate and log time below.";
+                      }
 
-      return (
-        <div
-          key={i}
-          style={{
-            border: '2px solid #ccc',
-            padding: '8px',
-            borderRadius: '5px',
-            width: '160px',
-            backgroundColor
-          }}
-        >
-          <strong>{bag.label}</strong><br />
-          {bag.duration}<br />
-          Start: {bag.startDate}<br />
-          {bagAlert && (
-            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>
-              {bagAlert}
-            </div>
-          )}
-          <div style={{ marginTop: '8px' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
-              Bag Duration Override
-            </div>
-            <select
-              value={overrides[i] ?? ''}
-              onChange={(e) => handleOverrideChange(patient.id, i, e.target.value)}
-              style={{ width: '100%', marginBottom: '10px' }}
-            >
-              <option value="">Auto</option>
-              {[1, 2, 3, 4, 7].map(day => (
-                <option key={day} value={day}>{day} day</option>
-              ))}
-            </select>
+                      if (showPtDoingBagsAlert && !(i === 0 && isToday || isTodayDiff)) {
+                        backgroundColor = 'transparent';
+                        bagAlert = "Pt/CG doing bag changes.";
+                      }
 
-            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
-              Bag change due at:
-            </div>
-            <input
-              type="time"
-              value={times[i] ?? ''}
-              onChange={(e) => handleTimeChange(patient.id, i, e.target.value)}
-              style={{ width: '100%' }}
-            />
-          </div>
-        </div>
-      );
-    })}
-  </div>
-</td>
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            border: '1px solid #ccc',
+                            padding: '4px',
+                            borderRadius: '4px',
+                            width: '120px',
+                            backgroundColor,
+                            fontSize: '11px',
+                            lineHeight: 1.2
+                          }}                          
+                        >
+                          <strong>{bag.label}</strong><br />
+                          {bag.duration}<br />
+                          Start: {bag.startDate}<br />
+                          {bagAlert && (
+                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>
+                              {bagAlert}
+                            </div>
+                          )}
+                          <div style={{ marginTop: '8px' }}>
+                            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
+                              Bag Duration Override
+                            </div>
+                            <select
+                              value={overrides[i] ?? ''}
+                              onChange={(e) => handleOverrideChange(patient.id, i, e.target.value)}
+                              style={{ width: '100%', marginBottom: '10px' }}
+                            >
+                              <option value="">Auto</option>
+                              {[1, 2, 3, 4, 7].map(day => (
+                                <option key={day} value={day}>{day} day</option>
+                              ))}
+                            </select>
+
+                            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
+                              Bag change due at:
+                            </div>
+                            <input
+                              type="time"
+                              value={times[i] ?? ''}
+                              onChange={(e) => handleTimeChange(patient.id, i, e.target.value)}
+                              style={{ width: '100%' }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </td>
                 <td style={{ backgroundColor: disconnectCellBg }}>
-                  <div>Cycle Completion</div>
+                  <div>Cycle Completion Date:</div>
                   <div>{disconnectDate}</div>
                   <input
                     type="time"
@@ -339,7 +354,22 @@ export default function BagSchedule() {
         </tbody>
       </table>
 
-      {selectedPatient && (
+      <div style={{
+  position: 'fixed',
+  bottom: 0,
+  left: 0,
+  width: '100%',
+  fontSize: '12px',
+  color: '#555',
+  backgroundColor: '#f9f9f9',
+  padding: '10px',
+  borderTop: '1px solid #ccc',
+  zIndex: 1000
+}}>
+  <strong>Disclaimer:</strong> This Blincyto Tracking Tool is intended for scheduling support only. It is an aid to help build projected bag change schedules based on available data. All calculated schedules are estimates and must be reviewed and confirmed by qualified clinical staff. This tool does not replace clinical judgment, institutional protocols, or physician orders. Always confirm infusion plans with the PIPS care team and Pharmacy before implementation.
+</div>
+
+{selectedPatient && (
         <div className="modal-overlay">
           <div className="modal-content">
             <button
