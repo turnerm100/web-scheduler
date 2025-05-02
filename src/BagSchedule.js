@@ -251,19 +251,26 @@ export default function BagSchedule() {
                         isTomorrowBag
                       ) {
                         backgroundColor = '#FF4C4C'; // Red highlight
-                        bagAlert = "RN visit needed to aspirate line before bag change";
-                      }
+                        bagAlert = "Line aspiration needed before bag change. Coordinate RN visit based on time remaining on pump. ";
+                      } else if (
+                        i > 0 &&
+                        bag.durationDays < bagData[i - 1].durationDays &&
+                        isToday
+                      ) {
+                        backgroundColor = '#AFE19B'; // Green highlight
+                        bagAlert = "Confirm RN aware that aspiration of line is required when doing pump reprogram and bag change.";
+                      }                      
                        else if (i === 0 && isToday) {
-                        backgroundColor = '#92D050';
+                        backgroundColor = '#AFE19B';
                         bagAlert = "First bag hookup. Please enter hookup time.";
                       } else if (isTodayDiff) {
-                        backgroundColor = '#92D050';
+                        backgroundColor = '#AFE19B';
                         bagAlert = "Pump reprogram due today.";
                       } else if (i === 0 && isTomorrowBag && !showPtDoingBagsAlert) {
-                        backgroundColor = '#E97132';
+                        backgroundColor = '#F6F12B';
                         bagAlert = "Confirm hookup time w/ hospital or Patient.";
                       } else if (isTomorrowBag && !showPtDoingBagsAlert) {
-                        backgroundColor = '#E97132';
+                        backgroundColor = '#F6F12B';
                         bagAlert = "Call pt/cg today for remaining time on pump. Calculate and log time below.";
                       }
 
@@ -289,10 +296,16 @@ export default function BagSchedule() {
                           {bag.duration}<br />
                           Start: {bag.startDate}<br />
                           {bagAlert && (
-                            <div style={{ color: 'black', fontWeight: 'bold', marginTop: '5px' }}>
-                              {bagAlert}
-                            </div>
-                          )}
+  <div
+    style={{
+      color: bagAlert === "Pt/CG doing bag changes." ? '#0070C0' : 'black',
+      fontWeight: 'bold',
+      marginTop: '5px'
+    }}
+  >
+    {bagAlert}
+  </div>
+)}
                           <div style={{ marginTop: '8px' }}>
                             <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
                               Bag Duration Override
