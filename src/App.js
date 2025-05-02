@@ -21,7 +21,7 @@ function App() {
   };
 
   return (
-    <Router>
+    <Router basename="/web-scheduler">
       <Routes>
         <Route
           path="/"
