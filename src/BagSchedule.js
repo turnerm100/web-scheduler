@@ -129,33 +129,56 @@ export default function BagSchedule() {
     let daysPassed = Math.floor((ourDate - hospitalDate) / (1000 * 60 * 60 * 24));
     daysPassed = daysPassed < 0 ? 0 : daysPassed;
     const remainingDays = totalDays - daysPassed;
-
+  
     const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
-    const schedule = getBagDurations(remainingDays, overrides);
     const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
-
+    const schedule = getBagDurations(remainingDays, overrides);
+  
     let current = new Date(ourDate);
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+  
     for (let i = 0; i < schedule.length; i++) {
-      const startDateObj = new Date(current);
+      const startDate = new Date(current);
       const duration = schedule[i];
-
-      const today = new Date();
-      const tomorrow = new Date();
-      tomorrow.setDate(today.getDate() + 1);
-
-      const isToday = startDateObj.toDateString() === today.toDateString();
-      const isTomorrow = startDateObj.toDateString() === tomorrow.toDateString();
-
-      if (i === 0 && isToday) return 0;
-      if (i === 0 && isTomorrow && !showPtDoingBagsAlert) return 1;
-      if (i > 0 && isToday && schedule[i] !== schedule[i - 1]) return 0;
-      if (isTomorrow && !showPtDoingBagsAlert) return 1;
-
+  
+      const isToday = startDate.toDateString() === today.toDateString();
+      const isTomorrow = startDate.toDateString() === tomorrow.toDateString();
+      const durationChanged = i > 0 && schedule[i] !== schedule[i - 1];
+  
+      // RED HIGHLIGHT (tomorrow bag is shorter than previous)
+      if (i > 0 && isTomorrow && schedule[i] < schedule[i - 1]) {
+        return 0;
+      }
+  
+      // GREEN HIGHLIGHTS
+      if ((i === 0 && isToday) || (isToday && durationChanged)) {
+        return 0;
+      }
+  
+      // YELLOW HIGHLIGHTS (tomorrow and NOT doing bags)
+      if (!showPtDoingBagsAlert) {
+        if ((i === 0 && isTomorrow) || (isTomorrow && durationChanged)) {
+          return 0;
+        }
+      }
+  
       current.setDate(current.getDate() + duration);
     }
-
-    return 2;
-  };
+  
+    // DISCONNECT HIGHLIGHT
+    const disconnectDate = new Date(current);
+    if (
+      disconnectDate.toDateString() === today.toDateString() || // green
+      disconnectDate.toDateString() === tomorrow.toDateString() // yellow
+    ) {
+      return 0;
+    }
+  
+    // No visual highlights
+    return 1;
+  };  
 
   const sortedPatients = useMemo(() => {
     return [...patients].sort((a, b) => getPatientHighlightRank(a) - getPatientHighlightRank(b));
@@ -173,8 +196,8 @@ export default function BagSchedule() {
             <th>Cycle Days:</th>
             <th>Bag Info:</th>
             <th>Disconnect Date:</th>
-            <th>Actions:</th>
-            <th>Printable Bag Change Schedule:</th>
+            <th style={{ maxWidth: '160px', width: '100px' }}>Actions:</th>
+            <th style={{ maxWidth: '160px', width: '100px' }}>Printable Bag Change Schedule:</th>
           </tr>
         </thead>
         <tbody>
@@ -219,8 +242,8 @@ export default function BagSchedule() {
             const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
 
             let disconnectCellBg = 'transparent';
-            if (isDisconnectToday) disconnectCellBg = '#92D050';
-            else if (isDisconnectTomorrow) disconnectCellBg = '#E97132';
+if (isDisconnectToday) disconnectCellBg = '#AFE19B'; // Updated green
+else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
 
             return (
               <tr key={patient.id}>
@@ -271,13 +294,17 @@ export default function BagSchedule() {
                         bagAlert = "Confirm hookup time w/ hospital or Patient.";
                       } else if (isTomorrowBag && !showPtDoingBagsAlert) {
                         backgroundColor = '#F6F12B';
-                        bagAlert = "Call pt/cg today for remaining time on pump. Calculate and log time below.";
+                        bagAlert = "Call pt/cg today for remaining time on pump. Calculate and log time.";
                       }
 
-                      if (showPtDoingBagsAlert && !(i === 0 && isToday || isTodayDiff)) {
+                      if (
+                        showPtDoingBagsAlert &&
+                        !(i === 0 && isToday || isTodayDiff) &&
+                        backgroundColor !== '#FF4C4C'
+                      ) {
                         backgroundColor = 'transparent';
                         bagAlert = "Pt/CG doing bag changes.";
-                      }
+                      }                      
 
                       return (
                         <div
@@ -336,23 +363,52 @@ export default function BagSchedule() {
                     })}
                   </div>
                 </td>
-                <td style={{ backgroundColor: disconnectCellBg }}>
-                  <div>Cycle Completion Date:</div>
-                  <div>{disconnectDate}</div>
-                  <input
-                    type="time"
-                    value={times['disconnect'] ?? ''}
-                    onChange={(e) => handleTimeChange(patient.id, 'disconnect', e.target.value)}
-                  />
-                </td>
-                <td>
-                  <button
-                    className="rounded-button"
-                    onClick={() => handleSaveOverrides(patient.id)}
-                  >
-                    Save Changes
-                  </button>
-                </td>
+                <td style={{ backgroundColor: disconnectCellBg === '#E97132' ? '#F6F12B' : disconnectCellBg, width: '120px' }}>
+  <div style={{ width: '100%' }}>
+    <div>Cycle Completion Date:</div>
+    <div>{disconnectDate}</div>
+    <input
+      type="time"
+      value={times['disconnect'] ?? ''}
+      onChange={(e) => handleTimeChange(patient.id, 'disconnect', e.target.value)}
+      style={{ width: '100%' }}
+    />
+
+{disconnectCellBg === '#F6F12B' && (
+  <div style={{
+    marginTop: '6px',
+    fontWeight: 'bold',
+    color: '#000000',
+    fontSize: '11px',
+    lineHeight: 1.3
+  }}>
+    Call pt/cg to determine remaining time on infusions. Calculate and log disconnect time.
+  </div>
+)}
+
+{disconnectCellBg === '#AFE19B' && (
+  <div style={{
+    marginTop: '6px',
+    fontWeight: 'bold',
+    color: '#000000',
+    fontSize: '11px',
+    lineHeight: 1.3
+  }}>
+    RN to be scheduled for disconnect visit.
+  </div>
+)}
+  </div>
+</td>
+
+<td style={{ maxWidth: '160px', width: '100px' }}>
+  <button
+    className="rounded-button"
+    style={{ width: '100%' }}
+    onClick={() => handleSaveOverrides(patient.id)}
+  >
+    Save Changes
+  </button>
+</td>
                 <td>
                   <button
                     className="rounded-button"
