@@ -182,7 +182,7 @@ export default function BagSchedule() {
 
   const sortedPatients = useMemo(() => {
     return [...patients].sort((a, b) => getPatientHighlightRank(a) - getPatientHighlightRank(b));
-  }, [patients, overrideEdits]);
+  }, [patients, overrideEdits, getPatientHighlightRank]);  
 
   return (
     <div style={{ padding: 20 }}>
