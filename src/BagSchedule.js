@@ -60,9 +60,9 @@ export default function BagSchedule() {
     const overrides = overrideEdits[patientId] || {};
     const times = bagTimeEdits[patientId] || {};
 
-    const bagOverrides = Array.from({ length: 8 }, (_, i) => overrides[i] ?? null);
+    const bagOverrides = Array.from({ length: 28 }, (_, i) => overrides[i] ?? null);
     const bagTimes = {
-      bags: Array.from({ length: 8 }, (_, i) => times[i] ?? ''),
+      bags: Array.from({ length: 28 }, (_, i) => times[i] ?? ''),
       disconnect: times['disconnect'] ?? ''
     };
 
@@ -101,7 +101,7 @@ export default function BagSchedule() {
   const getBagDurations = (daysLeft, overrides = []) => {
     const bags = [];
     let remaining = daysLeft;
-    for (let i = 0; i < 8 && remaining > 0; i++) {
+    for (let i = 0; i < 28 && remaining > 0; i++) {
       const override = parseInt(overrides[i]);
       let duration;
       if ([1, 2, 3, 4, 7].includes(override)) {
