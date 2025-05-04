@@ -10,7 +10,8 @@ export default function AddPatient({ editData, onClose }) {
     name: '', mrn: '', dob: '', type: '', status: '', dx: '', hospital: '',
     pharmTeam: '', nurseTeam: '', interpreter: '', readWriteLang: '', notes: '',
     lineType: '', ext: '', cycle: '', daysInCycle: '', pipsBagChanges: '',
-    hospStartDate: '', ourStartDate: '', hookupTime: ''
+    hospStartDate: '', ourStartDate: '', hookupTime: '',
+    isPreservativeFree: false // NEW FIELD
   });
 
   useEffect(() => {
@@ -145,6 +146,27 @@ export default function AddPatient({ editData, onClose }) {
           {renderField('Blincyto Start Date', 'hospStartDate', 'date')}
           {renderField('PIPS start Date', 'ourStartDate', 'date')}
           {renderField('Hookup Time', 'hookupTime', 'time')}
+
+          {/* NEW: Preservative Free Toggle */}
+          <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center' }}>
+            <label style={{ width: '250px' }}><strong>Preservative free only cycle:</strong></label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                checked={formData.isPreservativeFree || false}
+                onChange={(e) =>
+                  setFormData(prev => ({ ...prev, isPreservativeFree: e.target.checked }))
+                }
+                style={{ transform: 'scale(1.5)', marginRight: '8px' }}
+              />
+              <span style={{
+                color: formData.isPreservativeFree ? 'green' : 'gray',
+                fontWeight: formData.isPreservativeFree ? 'bold' : 'normal'
+              }}>
+                {formData.isPreservativeFree ? 'ON' : 'OFF'}
+              </span>
+            </label>
+          </div>
         </>
       )}
 

@@ -98,12 +98,47 @@ export default function BagSchedule() {
     );
   };
 
-  const getBagDurations = (daysLeft, overrides = []) => {
+  const getBagDurations = (daysLeft, overrides = [], isPreservativeFree = false) => {
     const bags = [];
     let remaining = daysLeft;
+  
+    if (isPreservativeFree) {
+      for (let i = 0; i < 28 && remaining > 0; i++) {
+        const rawOverride = overrides[i];
+        const override = Number.isInteger(rawOverride) ? rawOverride : parseInt(rawOverride);
+        let duration;
+  
+        // If override is exactly 1, honor it
+        if (override === 1) {
+          duration = 1;
+        }
+        // If no override provided
+        else if (isNaN(override)) {
+          if (remaining % 2 === 1 && bags.length === 0) {
+            // Force first bag to be 1-day if odd total days
+            duration = 1;
+          } else {
+            duration = 2;
+          }
+        } else {
+          // fallback
+          duration = 2;
+        }
+  
+        if (duration > remaining) duration = remaining;
+  
+        bags.push(duration);
+        remaining -= duration;
+      }
+  
+      return bags;
+    }
+  
+    // Standard logic for non-preservative-free cycles
     for (let i = 0; i < 28 && remaining > 0; i++) {
       const override = parseInt(overrides[i]);
       let duration;
+  
       if ([1, 2, 3, 4, 7].includes(override)) {
         duration = override;
       } else {
@@ -116,11 +151,14 @@ export default function BagSchedule() {
           duration = mod <= 4 ? mod : (mod === 5 ? 2 : 3);
         }
       }
+  
+      if (duration > remaining) duration = remaining;
       bags.push(duration);
       remaining -= duration;
     }
+  
     return bags;
-  };
+  };  
 
   const getPatientHighlightRank = (patient) => {
     const totalDays = parseInt(patient.daysInCycle, 10);
@@ -132,7 +170,7 @@ export default function BagSchedule() {
   
     const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
     const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
-    const schedule = getBagDurations(remainingDays, overrides);
+    const schedule = getBagDurations(remainingDays, overrides, patient.isPreservativeFree || false);
   
     let current = new Date(ourDate);
     const today = new Date();
@@ -211,7 +249,7 @@ export default function BagSchedule() {
 
             const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
             const times = bagTimeEdits[patient.id] || {};
-            const schedule = getBagDurations(remainingDays, overrides);
+            const schedule = getBagDurations(remainingDays, overrides, patient.isPreservativeFree || false);
 
             const bagData = [];
             let current = new Date(ourDate);
@@ -338,15 +376,20 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
                               Bag Duration Override
                             </div>
                             <select
-                              value={overrides[i] ?? ''}
-                              onChange={(e) => handleOverrideChange(patient.id, i, e.target.value)}
-                              style={{ width: '100%', marginBottom: '10px' }}
-                            >
-                              <option value="">Auto</option>
-                              {[1, 2, 3, 4, 7].map(day => (
-                                <option key={day} value={day}>{day} day</option>
-                              ))}
-                            </select>
+  value={overrides[i] ?? ''}
+  onChange={(e) => handleOverrideChange(patient.id, i, e.target.value)}
+  style={{ width: '100%', marginBottom: '10px' }}
+>
+  <option value="">Auto</option>
+  {(patient.isPreservativeFree ? [1] : [1, 2, 3, 4, 7]).map(day => (
+    <option key={day} value={day}>{day} day</option>
+  ))}
+</select>
+{patient.isPreservativeFree && (
+  <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>
+    Only 1-day overrides allowed (preservative-free).
+  </div>
+)}
 
                             <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
                               Bag change due at:
