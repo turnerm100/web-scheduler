@@ -235,7 +235,6 @@ export default function BagSchedule() {
             <th>Bag Info:</th>
             <th>Disconnect Date:</th>
             <th style={{ maxWidth: '160px', width: '100px' }}>Actions:</th>
-            <th style={{ maxWidth: '160px', width: '100px' }}>Printable Bag Change Schedule:</th>
           </tr>
         </thead>
         <tbody>
@@ -447,24 +446,32 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
   </div>
 </td>
 
-<td style={{ maxWidth: '240px', width: '240px' }}>
+<td style={{ maxWidth: '240px', width: '200px' }}>
   <button
     className="rounded-button"
-    style={{ marginBottom: '6px', width: '100%' }}
+    style={{ marginBottom: '4px', width: '100%' }}
     onClick={() => handleSaveOverrides(patient.id)}
   >
     Save Changes
   </button>
+  <div style={{ marginBottom: '12px', fontSize: '12px', textAlign: 'center' }}>
+    Must click to save edits to bag schedules.
+  </div>
+
   <button
     className="rounded-button"
-    style={{ marginBottom: '6px', width: '100%' }}
+    style={{ marginBottom: '4px', width: '100%' }}
     onClick={() => window.open(`/print-schedule/${patient.id}`, '_blank')}
   >
     Print Schedule
   </button>
+  <div style={{ marginBottom: '12px', fontSize: '12px', textAlign: 'center' }}>
+    Provides a schedule of bag changes and nurse visits.
+  </div>
+
   <button
     className="rounded-button"
-    style={{ backgroundColor: '#FF4C4C', color: 'white', width: '100%' }}
+    style={{ backgroundColor: '#FF4C4C', color: 'white', marginBottom: '4px', width: '100%' }}
     onClick={async () => {
       if (window.confirm('Are you sure you want to delete the Blincyto schedule for this patient?')) {
         try {
@@ -494,6 +501,9 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
   >
     Delete Schedule
   </button>
+  <div style={{ fontSize: '12px', textAlign: 'center' }}>
+    Current Blincyto cycle information will be deleted. Patient information will be saved.
+  </div>
 </td>
               </tr>
             );
