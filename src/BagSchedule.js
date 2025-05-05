@@ -312,7 +312,7 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
                         isTomorrowBag
                       ) {
                         backgroundColor = '#FF4C4C'; // Red highlight
-                        bagAlert = "Line aspiration needed before bag change. Coordinate RN visit based on time remaining on pump. ";
+                        bagAlert = "RN visit and line aspiration required for tomorrows bag change. Call pt/cg for time remaining on pump and log bag change time below.";
                       } else if (
                         i > 0 &&
                         bag.durationDays < bagData[i - 1].durationDays &&
@@ -363,7 +363,10 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
                           {bagAlert && (
   <div
     style={{
-      color: bagAlert === "Pt/CG doing bag changes." ? '#0070C0' : 'black',
+      color:
+        bagAlert === "Pt/CG doing bag changes." ? '#0070C0' :
+        bagAlert === "Confirm RN aware that aspiration of line is required when doing pump reprogram and bag change." ? 'red' :
+        'black',
       fontWeight: 'bold',
       marginTop: '5px'
     }}
@@ -371,6 +374,7 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
     {bagAlert}
   </div>
 )}
+
                           <div style={{ marginTop: '8px' }}>
                             <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
                               Bag Duration Override
