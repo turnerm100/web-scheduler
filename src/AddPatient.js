@@ -29,7 +29,7 @@ export default function AddPatient({ editData, onClose }) {
           ...prev,
           [name]: value,
           nursingVisitPlan: 'RN will be doing bag/drsg changes and labs if ordered.',
-          nursingVisitDay: ''
+          nursingVisitDay: 'RN visit will coincide with bag change schedule.'
         }));
       } else {
         setFormData(prev => ({
@@ -44,6 +44,13 @@ export default function AddPatient({ editData, onClose }) {
         alert('Please select "PIPS doing Bag Changes?" before choosing a Nursing Visit Plan.');
         return;
       }
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        nursingVisitDay:
+          value === 'RN to do lab/drsg only. Pt/cg doing bag changes.' ? '' : formData.nursingVisitDay
+      }));
+    } else if (name === 'nursingVisitDay') {
       setFormData(prev => ({ ...prev, [name]: value }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
@@ -52,6 +59,13 @@ export default function AddPatient({ editData, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+  
+    const { name, mrn, dob } = formData;
+    if (!name.trim() || !mrn.trim() || !dob.trim()) {
+      alert('Patient Name, MRN #, and DOB are required.');
+      return;
+    }
+  
     try {
       if (editData) {
         await updateDoc(doc(db, 'patients', editData.id), formData);
@@ -68,7 +82,7 @@ export default function AddPatient({ editData, onClose }) {
       console.error('Error saving patient:', error);
       alert('Failed to save patient.');
     }
-  };
+  };  
 
   const handleCancel = () => {
     if (onClose) onClose();
@@ -82,19 +96,19 @@ export default function AddPatient({ editData, onClose }) {
         name={name}
         value={formData[name] || ''}
         onChange={handleChange}
-        style={{ width: '500px' }}
+        style={{ width: '400px' }}
       />
     </div>
   );
 
-  const renderSelect = (label, name, options, disabled = false, fontColor = 'black') => (
+  const renderSelect = (label, name, options, disabled = false) => (
     <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
       <label style={{ width: '250px' }}><strong>{label}:</strong></label>
       <select
         name={name}
         value={formData[name] || ''}
         onChange={handleChange}
-        style={{ width: '520px', color: fontColor, whiteSpace: 'normal', overflowWrap: 'break-word', padding: '4px' }}
+        style={{ width: '420px', whiteSpace: 'normal', overflowWrap: 'break-word', padding: '4px', color: '#000' }}
         disabled={disabled}
       >
         <option value="">Select</option>
@@ -107,31 +121,10 @@ export default function AddPatient({ editData, onClose }) {
     <form onSubmit={handleSubmit} style={{ padding: 20 }}>
       {/* Tabs */}
       <div style={{ marginBottom: 20 }}>
-        <button
-          type="button"
-          onClick={() => setActiveTab('patient')}
-          style={{
-            marginRight: 10,
-            backgroundColor: activeTab === 'patient' ? '#153D64' : '#ccc',
-            color: activeTab === 'patient' ? 'white' : 'black',
-            padding: '6px 12px',
-            border: 'none',
-            borderRadius: '4px'
-          }}
-        >
+        <button type="button" onClick={() => setActiveTab('patient')} style={{ marginRight: 10, backgroundColor: activeTab === 'patient' ? '#153D64' : '#ccc', color: activeTab === 'patient' ? 'white' : 'black', padding: '6px 12px', border: 'none', borderRadius: '4px' }}>
           Patient Info
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('schedule')}
-          style={{
-            backgroundColor: activeTab === 'schedule' ? '#153D64' : '#ccc',
-            color: activeTab === 'schedule' ? 'white' : 'black',
-            padding: '6px 12px',
-            border: 'none',
-            borderRadius: '4px'
-          }}
-        >
+        <button type="button" onClick={() => setActiveTab('schedule')} style={{ backgroundColor: activeTab === 'schedule' ? '#153D64' : '#ccc', color: activeTab === 'schedule' ? 'white' : 'black', padding: '6px 12px', border: 'none', borderRadius: '4px' }}>
           Blincyto Schedule
         </button>
       </div>
@@ -155,18 +148,9 @@ export default function AddPatient({ editData, onClose }) {
           {renderSelect('Reads/Writes in their language', 'readWriteLang', ['Yes', 'No'])}
           <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'flex-start' }}>
             <label style={{ width: '250px' }}><strong>Notes:</strong></label>
-            <textarea
-              name="notes"
-              value={formData.notes || ''}
-              onChange={handleChange}
-              style={{ width: '500px', height: '80px' }}
-            />
+            <textarea name="notes" value={formData.notes || ''} onChange={handleChange} style={{ width: '400px', height: '80px' }} />
           </div>
-          {renderSelect('Line Type', 'lineType', [
-            'Port', 'PICC - SL', 'PICC - DL', 'PICC - TL',
-            'CVC Tunneled - SL', 'CVC Tunneled - DL', 'CVC Tunneled - TL',
-            'Midline - SL', 'Midline - DL', 'Midline - TL'
-          ])}
+          {renderSelect('Line Type', 'lineType', ['Port', 'PICC - SL', 'PICC - DL', 'PICC - TL', 'CVC Tunneled - SL', 'CVC Tunneled - DL', 'CVC Tunneled - TL', 'Midline - SL', 'Midline - DL', 'Midline - TL'])}
           {renderSelect('Extension Added?', 'ext', ['No', 'Yes-7"', 'Yes-14"'])}
         </>
       )}
@@ -181,13 +165,12 @@ export default function AddPatient({ editData, onClose }) {
           {renderSelect('Nursing Visit Plan', 'nursingVisitPlan',
             formData.pipsBagChanges === 'Yes'
               ? ['RN will be doing bag/drsg changes and labs if ordered.']
-              : ['RN to do lab/drsg only. Pt/cg doing bag changes.',
-                 'Pt/Cg doing bag changes and lab/drsg done at hospital/clinic.'],
-            formData.pipsBagChanges === 'Yes',
-            'black')}
+              : ['RN to do lab/drsg only. Pt/cg doing bag changes.', 'Pt/Cg doing bag changes and lab/drsg done at hospital/clinic.'],
+            formData.pipsBagChanges === 'Yes')}
 
-          {(formData.pipsBagChanges === 'No' && formData.nursingVisitPlan === 'RN to do lab/drsg only. Pt/cg doing bag changes.') &&
-            renderSelect('RN Visit Day', 'nursingVisitDay', ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])}
+          {formData.pipsBagChanges === 'No' && formData.nursingVisitPlan === 'RN to do lab/drsg only. Pt/cg doing bag changes.'
+            ? renderSelect('RN Visit Day', 'nursingVisitDay', ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])
+            : renderField('RN Visit Day', 'nursingVisitDay')}
 
           {renderField('Blincyto Start Date', 'hospStartDate', 'date')}
           {renderField('PIPS start Date', 'ourStartDate', 'date')}
@@ -196,18 +179,8 @@ export default function AddPatient({ editData, onClose }) {
           <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center' }}>
             <label style={{ width: '250px' }}><strong>Preservative free only cycle:</strong></label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                type="checkbox"
-                checked={formData.isPreservativeFree || false}
-                onChange={(e) =>
-                  setFormData(prev => ({ ...prev, isPreservativeFree: e.target.checked }))
-                }
-                style={{ transform: 'scale(1.5)', marginRight: '8px' }}
-              />
-              <span style={{
-                color: formData.isPreservativeFree ? 'green' : 'gray',
-                fontWeight: formData.isPreservativeFree ? 'bold' : 'normal'
-              }}>
+              <input type="checkbox" checked={formData.isPreservativeFree || false} onChange={(e) => setFormData(prev => ({ ...prev, isPreservativeFree: e.target.checked }))} style={{ transform: 'scale(1.5)', marginRight: '8px' }} />
+              <span style={{ color: formData.isPreservativeFree ? 'green' : 'gray', fontWeight: formData.isPreservativeFree ? 'bold' : 'normal' }}>
                 {formData.isPreservativeFree ? 'ON' : 'OFF'}
               </span>
             </label>

@@ -1,7 +1,7 @@
 // src/BagSchedule.js
 import React, { useEffect, useMemo, useState } from 'react';
 import { db } from './firebase';
-import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import AddPatient from './AddPatient';
 import './BagSchedule.css';
 
@@ -447,23 +447,54 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
   </div>
 </td>
 
-<td style={{ maxWidth: '160px', width: '100px' }}>
+<td style={{ maxWidth: '240px', width: '240px' }}>
   <button
     className="rounded-button"
-    style={{ width: '100%' }}
+    style={{ marginBottom: '6px', width: '100%' }}
     onClick={() => handleSaveOverrides(patient.id)}
   >
     Save Changes
   </button>
+  <button
+    className="rounded-button"
+    style={{ marginBottom: '6px', width: '100%' }}
+    onClick={() => window.open(`/print-schedule/${patient.id}`, '_blank')}
+  >
+    Print Schedule
+  </button>
+  <button
+    className="rounded-button"
+    style={{ backgroundColor: '#FF4C4C', color: 'white', width: '100%' }}
+    onClick={async () => {
+      if (window.confirm('Are you sure you want to delete the Blincyto schedule for this patient?')) {
+        try {
+          await updateDoc(doc(db, 'patients', patient.id), {
+            cycle: '',
+            daysInCycle: '',
+            pipsBagChanges: '',
+            nursingVisitPlan: '',
+            nursingVisitDay: '',
+            hospStartDate: '',
+            ourStartDate: '',
+            hookupTime: '',
+            isPreservativeFree: false,
+            bagOverrides: [],
+            bagTimes: {
+              bags: Array(28).fill(''),
+              disconnect: ''
+            }
+          });
+          alert('Blincyto schedule deleted for this patient.');
+        } catch (error) {
+          console.error('Error clearing schedule:', error);
+          alert('Failed to delete Blincyto schedule.');
+        }
+      }
+    }}
+  >
+    Delete Schedule
+  </button>
 </td>
-                <td>
-                  <button
-                    className="rounded-button"
-                    onClick={() => window.open(`/print-schedule/${patient.id}`, '_blank')}
-                  >
-                    Print Schedule
-                  </button>
-                </td>
               </tr>
             );
           })}
