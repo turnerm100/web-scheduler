@@ -11,7 +11,9 @@ export default function AddPatient({ editData, onClose }) {
     pharmTeam: '', nurseTeam: '', interpreter: '', readWriteLang: '', notes: '',
     lineType: '', ext: '', cycle: '', daysInCycle: '', pipsBagChanges: '',
     hospStartDate: '', ourStartDate: '', hookupTime: '',
-    isPreservativeFree: false // NEW FIELD
+    isPreservativeFree: false,
+    nursingVisitPlan: '',
+    nursingVisitDay: ''
   });
 
   useEffect(() => {
@@ -19,7 +21,33 @@ export default function AddPatient({ editData, onClose }) {
   }, [editData]);
 
   const handleChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+
+    if (name === 'pipsBagChanges') {
+      if (value === 'Yes') {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          nursingVisitPlan: 'RN will be doing bag/drsg changes and labs if ordered.',
+          nursingVisitDay: ''
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          nursingVisitPlan: '',
+          nursingVisitDay: ''
+        }));
+      }
+    } else if (name === 'nursingVisitPlan') {
+      if (!formData.pipsBagChanges) {
+        alert('Please select "PIPS doing Bag Changes?" before choosing a Nursing Visit Plan.');
+        return;
+      }
+      setFormData(prev => ({ ...prev, [name]: value }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -54,15 +82,21 @@ export default function AddPatient({ editData, onClose }) {
         name={name}
         value={formData[name] || ''}
         onChange={handleChange}
-        style={{ width: '300px' }}
+        style={{ width: '400px' }}
       />
     </div>
   );
 
-  const renderSelect = (label, name, options) => (
+  const renderSelect = (label, name, options, disabled = false) => (
     <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
       <label style={{ width: '250px' }}><strong>{label}:</strong></label>
-      <select name={name} value={formData[name] || ''} onChange={handleChange} style={{ width: '300px' }}>
+      <select
+        name={name}
+        value={formData[name] || ''}
+        onChange={handleChange}
+        style={{ width: '420px', whiteSpace: 'normal', overflowWrap: 'break-word', padding: '4px' }}
+        disabled={disabled}
+      >
         <option value="">Select</option>
         {options.map(opt => <option key={opt}>{opt}</option>)}
       </select>
@@ -125,7 +159,7 @@ export default function AddPatient({ editData, onClose }) {
               name="notes"
               value={formData.notes || ''}
               onChange={handleChange}
-              style={{ width: '300px', height: '80px' }}
+              style={{ width: '400px', height: '80px' }}
             />
           </div>
           {renderSelect('Line Type', 'lineType', [
@@ -143,11 +177,21 @@ export default function AddPatient({ editData, onClose }) {
           {renderSelect('Blincyto Cycle', 'cycle', ['Cycle 1', 'Cycle 2', 'Cycle 3', 'Cycle 4', 'Cycle 5'])}
           {renderSelect('# Days in Cycle', 'daysInCycle', Array.from({ length: 28 }, (_, i) => (28 - i).toString()))}
           {renderSelect('PIPS doing Bag Changes?', 'pipsBagChanges', ['Yes', 'No'])}
+
+          {renderSelect('Nursing Visit Plan', 'nursingVisitPlan',
+            formData.pipsBagChanges === 'Yes'
+              ? ['RN will be doing bag/drsg changes and labs if ordered.']
+              : ['RN to do lab/drsg only. Pt/cg doing bag changes.',
+                 'Pt/Cg doing bag changes and lab/drsg done at hospital/clinic.'],
+            formData.pipsBagChanges === 'Yes')}
+
+          {(formData.pipsBagChanges === 'No' && formData.nursingVisitPlan === 'RN to do lab/drsg only. Pt/cg doing bag changes.') &&
+            renderSelect('RN Visit Day', 'nursingVisitDay', ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])}
+
           {renderField('Blincyto Start Date', 'hospStartDate', 'date')}
           {renderField('PIPS start Date', 'ourStartDate', 'date')}
           {renderField('Hookup Time', 'hookupTime', 'time')}
 
-          {/* NEW: Preservative Free Toggle */}
           <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center' }}>
             <label style={{ width: '250px' }}><strong>Preservative free only cycle:</strong></label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -229,9 +229,9 @@ export default function BagSchedule() {
         <thead>
           <tr style={{ position: 'sticky', top: '50px', backgroundColor: '#f1f1f1', zIndex: 2 }}>
             <th>Patient Name:</th>
-            <th>Blincyto Start Date:</th>
-            <th>PIPS Start Date:</th>
-            <th>Cycle Days:</th>
+            <th style={{ maxWidth: '160px', width: '75px' }}>Blincyto Start Date:</th>
+            <th style={{ maxWidth: '160px', width: '75px' }}>PIPS Start Date:</th>
+            <th style={{ maxWidth: '160px', width: '40px' }}>Cycle Days:</th>
             <th>Bag Info:</th>
             <th>Disconnect Date:</th>
             <th style={{ maxWidth: '160px', width: '100px' }}>Actions:</th>
