@@ -82,19 +82,19 @@ export default function AddPatient({ editData, onClose }) {
         name={name}
         value={formData[name] || ''}
         onChange={handleChange}
-        style={{ width: '400px' }}
+        style={{ width: '500px' }}
       />
     </div>
   );
 
-  const renderSelect = (label, name, options, disabled = false) => (
+  const renderSelect = (label, name, options, disabled = false, fontColor = 'black') => (
     <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
       <label style={{ width: '250px' }}><strong>{label}:</strong></label>
       <select
         name={name}
         value={formData[name] || ''}
         onChange={handleChange}
-        style={{ width: '420px', whiteSpace: 'normal', overflowWrap: 'break-word', padding: '4px' }}
+        style={{ width: '520px', color: fontColor, whiteSpace: 'normal', overflowWrap: 'break-word', padding: '4px' }}
         disabled={disabled}
       >
         <option value="">Select</option>
@@ -159,7 +159,7 @@ export default function AddPatient({ editData, onClose }) {
               name="notes"
               value={formData.notes || ''}
               onChange={handleChange}
-              style={{ width: '400px', height: '80px' }}
+              style={{ width: '500px', height: '80px' }}
             />
           </div>
           {renderSelect('Line Type', 'lineType', [
@@ -183,7 +183,8 @@ export default function AddPatient({ editData, onClose }) {
               ? ['RN will be doing bag/drsg changes and labs if ordered.']
               : ['RN to do lab/drsg only. Pt/cg doing bag changes.',
                  'Pt/Cg doing bag changes and lab/drsg done at hospital/clinic.'],
-            formData.pipsBagChanges === 'Yes')}
+            formData.pipsBagChanges === 'Yes',
+            'black')}
 
           {(formData.pipsBagChanges === 'No' && formData.nursingVisitPlan === 'RN to do lab/drsg only. Pt/cg doing bag changes.') &&
             renderSelect('RN Visit Day', 'nursingVisitDay', ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])}
