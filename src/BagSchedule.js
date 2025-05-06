@@ -70,6 +70,25 @@ export default function BagSchedule() {
     alert('Overrides and times saved!');
   };
 
+  const handleSaveThenPrint = async (patientId) => {
+    const overrides = overrideEdits[patientId] || {};
+    const times = bagTimeEdits[patientId] || {};
+  
+    const bagOverrides = Array.from({ length: 28 }, (_, i) => overrides[i] ?? null);
+    const bagTimes = {
+      bags: Array.from({ length: 28 }, (_, i) => times[i] ?? ''),
+      disconnect: times['disconnect'] ?? ''
+    };
+  
+    try {
+      await updateDoc(doc(db, 'patients', patientId), { bagOverrides, bagTimes });
+      window.open(`/print-schedule/${patientId}`, '_blank'); // Open print after saving
+    } catch (error) {
+      console.error('Failed to save before printing:', error);
+      alert('Could not save changes before printing. Please try again.');
+    }
+  };
+  
   const parseLocalDate = (dateString) => {
     if (!dateString) return new Date();
     const [year, month, day] = dateString.split('-').map(Number);
@@ -459,12 +478,12 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
   </div>
 
   <button
-    className="rounded-button"
-    style={{ marginBottom: '4px', width: '100%' }}
-    onClick={() => window.open(`/print-schedule/${patient.id}`, '_blank')}
-  >
-    Print Schedule
-  </button>
+  className="rounded-button"
+  style={{ marginBottom: '4px', width: '100%' }}
+  onClick={() => handleSaveThenPrint(patient.id)}
+>
+  Print Schedule
+</button>
   <div style={{ marginBottom: '12px', fontSize: '12px', textAlign: 'center' }}>
     Provides a schedule of bag changes and nurse visits.
   </div>
@@ -529,13 +548,6 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
 {selectedPatient && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <button
-              className="rounded-button"
-              style={{ float: 'right' }}
-              onClick={() => setSelectedPatient(null)}
-            >
-              Cancel
-            </button>
             <AddPatient
               patient={selectedPatient}
               editData={selectedPatient}

@@ -50,8 +50,6 @@ export default function AddPatient({ editData, onClose }) {
         nursingVisitDay:
           value === 'RN to do lab/drsg only. Pt/cg doing bag changes.' ? '' : formData.nursingVisitDay
       }));
-    } else if (name === 'nursingVisitDay') {
-      setFormData(prev => ({ ...prev, [name]: value }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -59,13 +57,12 @@ export default function AddPatient({ editData, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
     const { name, mrn, dob } = formData;
     if (!name.trim() || !mrn.trim() || !dob.trim()) {
       alert('Patient Name, MRN #, and DOB are required.');
       return;
     }
-  
+
     try {
       if (editData) {
         await updateDoc(doc(db, 'patients', editData.id), formData);
@@ -82,7 +79,7 @@ export default function AddPatient({ editData, onClose }) {
       console.error('Error saving patient:', error);
       alert('Failed to save patient.');
     }
-  };  
+  };
 
   const handleCancel = () => {
     if (onClose) onClose();
@@ -119,6 +116,44 @@ export default function AddPatient({ editData, onClose }) {
 
   return (
     <form onSubmit={handleSubmit} style={{ padding: 20 }}>
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        right: 0,
+        display: 'flex',
+        justifyContent: 'flex-end',
+        backgroundColor: 'white',
+        paddingBottom: '10px',
+        zIndex: 1000
+      }}>
+        <button
+          type="submit"
+          style={{
+            backgroundColor: '#153D64',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '8px 16px',
+            marginRight: '10px'
+          }}
+        >
+          Save Patient
+        </button>
+        <button
+          type="button"
+          onClick={handleCancel}
+          style={{
+            backgroundColor: '#ccc',
+            color: 'black',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '8px 16px'
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+
       {/* Tabs */}
       <div style={{ marginBottom: 20 }}>
         <button type="button" onClick={() => setActiveTab('patient')} style={{ marginRight: 10, backgroundColor: activeTab === 'patient' ? '#153D64' : '#ccc', color: activeTab === 'patient' ? 'white' : 'black', padding: '6px 12px', border: 'none', borderRadius: '4px' }}>
@@ -187,11 +222,6 @@ export default function AddPatient({ editData, onClose }) {
           </div>
         </>
       )}
-
-      <div style={{ marginTop: '20px' }}>
-        <button type="submit" style={{ marginRight: '10px' }}>Save Patient</button>
-        <button type="button" onClick={handleCancel}>Cancel</button>
-      </div>
     </form>
   );
 }
