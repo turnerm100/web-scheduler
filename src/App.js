@@ -82,13 +82,6 @@ function App() {
             maxHeight: '90vh',
             overflowY: 'auto'
           }}>
-            <button
-              className="rounded-button"
-              style={{ float: 'right' }}
-              onClick={() => setShowAddModal(false)}
-            >
-              Cancel
-            </button>
             <AddPatient onClose={() => setShowAddModal(false)} />
           </div>
         </div>

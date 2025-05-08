@@ -85,7 +85,6 @@ export default function PatientList() {
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
           }}>
-            <button onClick={handleCloseModal} style={{ float: 'right' }}>Cancel</button>
             <AddPatient key={selectedPatient?.id || 'new'} editData={selectedPatient} onClose={handleCloseModal} />
           </div>
         </div>
