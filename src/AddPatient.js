@@ -44,13 +44,22 @@ export default function AddPatient({ editData, onClose }) {
         alert('Please select "PIPS doing Bag Changes?" before choosing a Nursing Visit Plan.');
         return;
       }
+    
+      let updatedVisitDay = formData.nursingVisitDay;
+    
+      if (formData.pipsBagChanges === 'No' && value === 'Pt/Cg doing bag changes and lab/drsg done at hospital/clinic.') {
+        updatedVisitDay = 'Pt doing drsg/labs at Hospital/Clinic';
+      } else if (value === 'RN to do lab/drsg only. Pt/cg doing bag changes.') {
+        updatedVisitDay = '';
+      }
+    
       setFormData(prev => ({
         ...prev,
         [name]: value,
-        nursingVisitDay:
-          value === 'RN to do lab/drsg only. Pt/cg doing bag changes.' ? '' : formData.nursingVisitDay
+        nursingVisitDay: updatedVisitDay
       }));
-    } else {
+    }
+     else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
@@ -116,53 +125,81 @@ export default function AddPatient({ editData, onClose }) {
 
   return (
     <form onSubmit={handleSubmit} style={{ padding: 20 }}>
-      <div style={{
-        position: 'sticky',
-        top: 0,
-        right: 0,
-        display: 'flex',
-        justifyContent: 'flex-end',
-        backgroundColor: 'white',
-        paddingBottom: '10px',
-        zIndex: 1000
-      }}>
-        <button
-          type="submit"
-          style={{
-            backgroundColor: '#153D64',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            padding: '8px 16px',
-            marginRight: '10px'
-          }}
-        >
-          Save Patient
-        </button>
-        <button
-          type="button"
-          onClick={handleCancel}
-          style={{
-            backgroundColor: '#ccc',
-            color: 'black',
-            border: 'none',
-            borderRadius: '4px',
-            padding: '8px 16px'
-          }}
-        >
-          Cancel
-        </button>
-      </div>
+<div style={{
+  position: 'sticky',
+  top: 0,
+  zIndex: 1000,
+  backgroundColor: 'white',
+  padding: '10px 20px',
+  borderBottom: '1px solid #ccc',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+  gap: '10px',
+  marginBottom: '16px'
+}}>
+  {/* Tab Buttons on Left */}
+  <div>
+    <button
+      type="button"
+      onClick={() => setActiveTab('patient')}
+      style={{
+        marginRight: 10,
+        backgroundColor: activeTab === 'patient' ? '#153D64' : '#ccc',
+        color: activeTab === 'patient' ? 'white' : 'black',
+        padding: '8px 16px',
+        border: 'none',
+        borderRadius: '4px'
+      }}
+    >
+      Patient Info
+    </button>
+    <button
+      type="button"
+      onClick={() => setActiveTab('schedule')}
+      style={{
+        backgroundColor: activeTab === 'schedule' ? '#153D64' : '#ccc',
+        color: activeTab === 'schedule' ? 'white' : 'black',
+        padding: '8px 16px',
+        border: 'none',
+        borderRadius: '4px'
+      }}
+    >
+      Blincyto Schedule
+    </button>
+  </div>
 
-      {/* Tabs */}
-      <div style={{ marginBottom: 20 }}>
-        <button type="button" onClick={() => setActiveTab('patient')} style={{ marginRight: 10, backgroundColor: activeTab === 'patient' ? '#153D64' : '#ccc', color: activeTab === 'patient' ? 'white' : 'black', padding: '6px 12px', border: 'none', borderRadius: '4px' }}>
-          Patient Info
-        </button>
-        <button type="button" onClick={() => setActiveTab('schedule')} style={{ backgroundColor: activeTab === 'schedule' ? '#153D64' : '#ccc', color: activeTab === 'schedule' ? 'white' : 'black', padding: '6px 12px', border: 'none', borderRadius: '4px' }}>
-          Blincyto Schedule
-        </button>
-      </div>
+  {/* Save / Cancel Buttons on Right */}
+  <div>
+    <button
+      type="submit"
+      style={{
+        backgroundColor: '#153D64',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        padding: '8px 16px',
+        marginRight: '10px'
+      }}
+    >
+      Save Patient
+    </button>
+    <button
+      type="button"
+      onClick={handleCancel}
+      style={{
+        backgroundColor: '#ccc',
+        color: 'black',
+        border: 'none',
+        borderRadius: '4px',
+        padding: '8px 16px'
+      }}
+    >
+      Cancel
+    </button>
+  </div>
+</div>
 
       {/* Tab 1: Patient Info */}
       {activeTab === 'patient' && (
@@ -220,6 +257,39 @@ export default function AddPatient({ editData, onClose }) {
               </span>
             </label>
           </div>
+          <div style={{ marginTop: '16px' }}>
+  <button
+    type="button"
+    onClick={() => {
+      const confirmReset = window.confirm('This will clear all Blincyto Cycle information. Are you sure?');
+      if (confirmReset) {
+        setFormData(prev => ({
+          ...prev,
+          cycle: '',
+          daysInCycle: '',
+          pipsBagChanges: '',
+          nursingVisitPlan: '',
+          nursingVisitDay: '',
+          hospStartDate: '',
+          ourStartDate: '',
+          hookupTime: '',
+          isPreservativeFree: false
+        }));
+      }
+    }}
+    style={{
+      backgroundColor: '#D9534F',
+      color: 'white',
+      padding: '8px 16px',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer'
+    }}
+  >
+    Reset Cycle Info
+  </button>
+</div>
+
         </>
       )}
     </form>

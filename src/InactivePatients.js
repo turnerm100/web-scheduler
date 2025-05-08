@@ -80,12 +80,34 @@ export default function InactivePatients() {
       </table>
 
       {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)' }}>
-          <div style={{ background: 'white', margin: '5% auto', padding: 20, width: '90%', maxWidth: 800 }}>
-            <AddPatient key={selectedPatient?.id || 'edit'} editData={selectedPatient} onClose={handleCloseModal} />
-          </div>
-        </div>
-      )}
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    background: 'rgba(0,0,0,0.5)',
+    overflowY: 'auto',
+    zIndex: 1000,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingTop: '40px'
+  }}>
+    <div style={{
+      background: 'white',
+      padding: 20,
+      width: '90%',
+      maxWidth: 800,
+      borderRadius: '8px',
+      maxHeight: '90vh',
+      overflowY: 'auto',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+    }}>
+      <AddPatient key={selectedPatient?.id || 'edit'} editData={selectedPatient} onClose={handleCloseModal} />
+    </div>
+  </div>
+)}
     </div>
   );
 }

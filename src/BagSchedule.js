@@ -1,12 +1,20 @@
 // src/BagSchedule.js
 import React, { useEffect, useMemo, useState } from 'react';
 import { db } from './firebase';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import {
+  collection,
+  onSnapshot,
+  doc,
+  updateDoc,
+  deleteDoc,
+  getDocs // ✅ ← this is the missing piece
+} from 'firebase/firestore';
 import AddPatient from './AddPatient';
 import './BagSchedule.css';
 
 export default function BagSchedule() {
   const [patients, setPatients] = useState([]);
+  const [savedPatients, setSavedPatients] = useState([]); // ✅ Add this
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [overrideEdits, setOverrideEdits] = useState({});
   const [bagTimeEdits, setBagTimeEdits] = useState({});
@@ -15,6 +23,7 @@ export default function BagSchedule() {
     const unsub = onSnapshot(collection(db, 'patients'), snapshot => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setPatients(data);
+      setSavedPatients(data); // ✅ Add this
 
       const overrides = {};
       const times = {};
@@ -35,6 +44,14 @@ export default function BagSchedule() {
 
     return () => unsub();
   }, []);
+
+  // ✅ Add this helper function right after the useEffect
+  const refreshSavedPatients = async () => {
+    const snapshot = await getDocs(collection(db, 'patients'));
+    const updatedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setPatients(updatedData);
+    setSavedPatients(updatedData);
+  };
 
   const handleOverrideChange = (patientId, index, value) => {
     setOverrideEdits(prev => ({
@@ -67,7 +84,8 @@ export default function BagSchedule() {
     };
 
     await updateDoc(doc(db, 'patients', patientId), { bagOverrides, bagTimes });
-    alert('Overrides and times saved!');
+await refreshSavedPatients(); // <-- NEW: manually fetch saved state
+alert('Overrides and times saved!');
   };
 
   const handleSaveThenPrint = async (patientId) => {
@@ -82,7 +100,8 @@ export default function BagSchedule() {
   
     try {
       await updateDoc(doc(db, 'patients', patientId), { bagOverrides, bagTimes });
-      window.open(`/print-schedule/${patientId}`, '_blank'); // Open print after saving
+      await refreshSavedPatients(); // <-- ensures savedPatients is current
+      window.open(`/print-schedule/${patientId}`, '_blank'); // Open print after refreshing state      
     } catch (error) {
       console.error('Failed to save before printing:', error);
       alert('Could not save changes before printing. Please try again.');
@@ -238,8 +257,8 @@ export default function BagSchedule() {
   };  
 
   const sortedPatients = useMemo(() => {
-    return [...patients].sort((a, b) => getPatientHighlightRank(a) - getPatientHighlightRank(b));
-  }, [patients, overrideEdits, getPatientHighlightRank]);  
+    return [...savedPatients].sort((a, b) => getPatientHighlightRank(a) - getPatientHighlightRank(b));
+  }, [savedPatients]);   
 
   return (
     <div style={{ padding: 20 }}>
