@@ -65,30 +65,35 @@ export default function AddPatient({ editData, onClose }) {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const { name, mrn, dob } = formData;
-    if (!name.trim() || !mrn.trim() || !dob.trim()) {
-      alert('Patient Name, MRN #, and DOB are required.');
-      return;
-    }
+  e.preventDefault();
+  const { name, mrn, dob } = formData;
+  if (!name.trim() || !mrn.trim() || !dob.trim()) {
+    alert('Patient Name, MRN #, and DOB are required.');
+    return;
+  }
 
-    try {
-      if (editData) {
-        await updateDoc(doc(db, 'patients', editData.id), formData);
-        alert('Patient updated successfully!');
-      } else {
-        await addDoc(collection(db, 'patients'), {
-          ...formData,
-          createdAt: Timestamp.now()
-        });
-        alert('Patient added successfully!');
-      }
-      if (onClose) onClose();
-    } catch (error) {
-      console.error('Error saving patient:', error);
-      alert('Failed to save patient.');
+  try {
+    if (editData) {
+      await updateDoc(doc(db, 'patients', editData.id), {
+        ...formData,
+        pipsDoingBags: formData.pipsBagChanges // 🔥 critical fix here
+      });
+      alert('Patient updated successfully!');
+    } else {
+      await addDoc(collection(db, 'patients'), {
+        ...formData,
+        pipsDoingBags: formData.pipsBagChanges,
+        createdAt: Timestamp.now()
+      });
+      alert('Patient added successfully!');
     }
-  };
+    if (onClose) onClose();
+  } catch (error) {
+    console.error('Error saving patient:', error);
+    alert('Failed to save patient.');
+  }
+};
+
 
   const handleCancel = () => {
     if (onClose) onClose();

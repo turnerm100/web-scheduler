@@ -198,6 +198,17 @@ alert('Overrides and times saved!');
     return bags;
   };  
 
+  const getBagDetails = (duration) => {
+  switch (duration) {
+    case 1: return { volume: '240ml', rate: '10ml/hr' };
+    case 2: return { volume: '240ml', rate: '5ml/hr' };
+    case 3: return { volume: '130ml', rate: '1.8ml/hr' };
+    case 4: return { volume: '173ml', rate: '1.8ml/hr' };
+    case 7: return { volume: '101ml', rate: '0.6ml/hr' };
+    default: return { volume: '-', rate: '-' };
+  }
+};
+
   const getPatientHighlightRank = (patient) => {
     const totalDays = parseInt(patient.daysInCycle, 10);
     const hospitalDate = parseLocalDate(patient.hospStartDate);
@@ -335,116 +346,119 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
                 <td>{patient.daysInCycle}</td>
                 <td>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    {bagData.map((bag, i) => {
-                      const isTomorrowBag = isTomorrow(bag.startDateObj);
-                      const isToday = bag.startDateObj.toDateString() === new Date().toDateString();
-                      const isTodayDiff = isTodayAndDifferentFromPrevious(bag, bagData[i - 1]);
+{bagData.map((bag, i) => {
+  const isTomorrowBag = isTomorrow(bag.startDateObj);
+  const isToday = bag.startDateObj.toDateString() === new Date().toDateString();
+  const isTodayDiff = isTodayAndDifferentFromPrevious(bag, bagData[i - 1]);
+  const { volume, rate } = getBagDetails(bag.durationDays);
 
-                      let backgroundColor = 'transparent';
-                      let bagAlert = null;
+  let backgroundColor = 'transparent';
+  let bagAlert = null;
 
-                      if (
-                        i > 0 &&
-                        bag.durationDays < bagData[i - 1].durationDays &&
-                        isTomorrowBag
-                      ) {
-                        backgroundColor = '#FF4C4C'; // Red highlight
-                        bagAlert = "RN visit and line aspiration required for tomorrows bag change. Call pt/cg for time remaining on pump and log bag change time below.";
-                      } else if (
-                        i > 0 &&
-                        bag.durationDays < bagData[i - 1].durationDays &&
-                        isToday
-                      ) {
-                        backgroundColor = '#AFE19B'; // Green highlight
-                        bagAlert = "Confirm RN aware that aspiration of line is required when doing pump reprogram and bag change.";
-                      }                      
-                       else if (i === 0 && isToday) {
-                        backgroundColor = '#AFE19B';
-                        bagAlert = "First bag hookup. Please enter hookup time.";
-                      } else if (isTodayDiff) {
-                        backgroundColor = '#AFE19B';
-                        bagAlert = "Pump reprogram due today.";
-                      } else if (i === 0 && isTomorrowBag && !showPtDoingBagsAlert) {
-                        backgroundColor = '#F6F12B';
-                        bagAlert = "Confirm hookup time w/ hospital or Patient.";
-                      } else if (isTomorrowBag && !showPtDoingBagsAlert) {
-                        backgroundColor = '#F6F12B';
-                        bagAlert = "Call pt/cg today for remaining time on pump. Calculate and log time.";
-                      }
+  if (
+    i > 0 &&
+    bag.durationDays < bagData[i - 1].durationDays &&
+    isTomorrowBag
+  ) {
+    backgroundColor = '#FF4C4C'; // Red highlight
+    bagAlert = "RN visit and line aspiration required for tomorrows bag change. Call pt/cg for time remaining on pump and log bag change time below.";
+  } else if (
+    i > 0 &&
+    bag.durationDays < bagData[i - 1].durationDays &&
+    isToday
+  ) {
+    backgroundColor = '#AFE19B'; // Green highlight
+    bagAlert = "Confirm RN aware that aspiration of line is required when doing pump reprogram and bag change.";
+  } else if (i === 0 && isToday) {
+    backgroundColor = '#AFE19B';
+    bagAlert = "First bag hookup. Please enter hookup time.";
+  } else if (isTodayDiff) {
+    backgroundColor = '#AFE19B';
+    bagAlert = "Pump reprogram due today.";
+  } else if (i === 0 && isTomorrowBag && !showPtDoingBagsAlert) {
+    backgroundColor = '#F6F12B';
+    bagAlert = "Confirm hookup time w/ hospital or Patient.";
+  } else if (isTomorrowBag && !showPtDoingBagsAlert) {
+    backgroundColor = '#F6F12B';
+    bagAlert = "Call pt/cg today for remaining time on pump. Calculate and log time.";
+  }
 
-                      if (
-                        showPtDoingBagsAlert &&
-                        !(i === 0 && isToday || isTodayDiff) &&
-                        backgroundColor !== '#FF4C4C'
-                      ) {
-                        backgroundColor = 'transparent';
-                        bagAlert = "Pt/CG doing bag changes.";
-                      }                      
+  if (
+    showPtDoingBagsAlert &&
+    !(i === 0 && isToday || isTodayDiff) &&
+    backgroundColor !== '#FF4C4C'
+  ) {
+    backgroundColor = 'transparent';
+    bagAlert = "Pt/CG doing bag changes.";
+  }
 
-                      return (
-                        <div
-                          key={i}
-                          style={{
-                            border: '1px solid #ccc',
-                            padding: '4px',
-                            borderRadius: '4px',
-                            width: '120px',
-                            backgroundColor,
-                            fontSize: '11px',
-                            lineHeight: 1.2
-                          }}                          
-                        >
-                          <strong>{bag.label}</strong><br />
-                          {bag.duration}<br />
-                          Start: {bag.startDate}<br />
-                          {bagAlert && (
-  <div
-    style={{
-      color:
-        bagAlert === "Pt/CG doing bag changes." ? '#0070C0' :
-        bagAlert === "Confirm RN aware that aspiration of line is required when doing pump reprogram and bag change." ? 'red' :
-        'black',
-      fontWeight: 'bold',
-      marginTop: '5px'
-    }}
-  >
-    {bagAlert}
-  </div>
-)}
+  return (
+    <div
+      key={i}
+      style={{
+        border: '1px solid #ccc',
+        padding: '4px',
+        borderRadius: '4px',
+        width: '120px',
+        backgroundColor,
+        fontSize: '11px',
+        lineHeight: 1.2
+      }}
+    >
+      <strong>{bag.label}</strong><br />
+      {bag.duration}<br />
+      Start: {bag.startDate}<br />
+      Volume: {volume}<br />
+      Rate: {rate}<br />
+      {bagAlert && (
+        <div
+          style={{
+            color:
+              bagAlert === "Pt/CG doing bag changes." ? '#0070C0' :
+              bagAlert === "Confirm RN aware that aspiration of line is required when doing pump reprogram and bag change." ? 'red' :
+              'black',
+            fontWeight: 'bold',
+            marginTop: '5px'
+          }}
+        >
+          {bagAlert}
+        </div>
+      )}
 
-                          <div style={{ marginTop: '8px' }}>
-                            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
-                              Bag Duration Override
-                            </div>
-                            <select
-  value={overrides[i] ?? ''}
-  onChange={(e) => handleOverrideChange(patient.id, i, e.target.value)}
-  style={{ width: '100%', marginBottom: '10px' }}
->
-  <option value="">Auto</option>
-  {(patient.isPreservativeFree ? [1] : [1, 2, 3, 4, 7]).map(day => (
-    <option key={day} value={day}>{day} day</option>
-  ))}
-</select>
-{patient.isPreservativeFree && (
-  <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>
-    Only 1-day overrides allowed (preservative-free).
-  </div>
-)}
+      <div style={{ marginTop: '8px' }}>
+        <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
+          Bag Duration Override
+        </div>
+        <select
+          value={overrides[i] ?? ''}
+          onChange={(e) => handleOverrideChange(patient.id, i, e.target.value)}
+          style={{ width: '100%', marginBottom: '10px' }}
+        >
+          <option value="">Auto</option>
+          {(patient.isPreservativeFree ? [1] : [1, 2, 3, 4, 7]).map(day => (
+            <option key={day} value={day}>{day} day</option>
+          ))}
+        </select>
+        {patient.isPreservativeFree && (
+          <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>
+            Only 1-day overrides allowed (preservative-free).
+          </div>
+        )}
 
-                            <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
-                              Bag change due at:
-                            </div>
-                            <input
-                              type="time"
-                              value={times[i] ?? ''}
-                              onChange={(e) => handleTimeChange(patient.id, i, e.target.value)}
-                              style={{ width: '100%' }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+        <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
+          Bag change due at:
+        </div>
+        <input
+          type="time"
+          value={times[i] ?? ''}
+          onChange={(e) => handleTimeChange(patient.id, i, e.target.value)}
+          style={{ width: '100%' }}
+        />
+      </div>
+    </div>
+  );
+})}
+
                   </div>
                 </td>
                 <td style={{ backgroundColor: disconnectCellBg === '#E97132' ? '#F6F12B' : disconnectCellBg, width: '120px' }}>

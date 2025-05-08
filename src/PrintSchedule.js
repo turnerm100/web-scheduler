@@ -31,7 +31,10 @@ export default function PrintSchedule() {
   const formatDate = (date) => {
     if (!(date instanceof Date)) return '';
     return date.toLocaleDateString('en-US', {
-      weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
@@ -86,6 +89,9 @@ export default function PrintSchedule() {
 
   if (!patient) return <div style={{ padding: '40px' }}>Loading...</div>;
 
+  // Optional debug log
+  console.log('Raw patient:', patient);
+
   const schedule = getBagSchedule();
 
   return (
@@ -126,6 +132,32 @@ export default function PrintSchedule() {
             <p><strong>Duration:</strong> {bag.duration} days</p>
           </div>
         ))}
+      </div>
+
+      {/* Nursing Visit Information */}
+      <div style={{ marginTop: '40px', fontSize: '14px' }}>
+        <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
+        <p>
+          {patient.pipsDoingBags?.toLowerCase() === 'yes' && (
+            <>
+              A Providence Infusion and Pharmacy Nurse will perform a central line dressing change or port reaccess and lab draw (if ordered) at time of bag changes when indicated.
+            </>
+          )}
+
+          {patient.pipsDoingBags?.toLowerCase() === 'no' &&
+            patient.nursingVisitPlan?.toLowerCase().includes('rn to do lab') && (
+              <>
+                You will be doing your own bag changes but a Providence Infusion and Pharmacy RN will be visiting you once weekly and as needed for your central line dressing change or port reaccess and lab draw (if ordered). Your scheduled RN visit day is <strong>{patient.nursingVisitDay || patient.rnVisitDay || '[not provided]'}</strong>.
+              </>
+            )}
+
+          {patient.pipsDoingBags?.toLowerCase() === 'no' &&
+            patient.nursingVisitPlan?.toLowerCase().includes('lab/drsg done at hospital') && (
+              <>
+                You will be doing your own Blincyto bag changes and your weekly central line dressing change or port reaccess and labs (if ordered) have been arranged to be completed with your ordering provider. Please contact your provider for information on scheduled dressing change date.
+              </>
+            )}
+        </p>
       </div>
 
       <style>{`
