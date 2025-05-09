@@ -209,67 +209,8 @@ alert('Overrides and times saved!');
   }
 };
 
-  const getPatientHighlightRank = (patient) => {
-    const totalDays = parseInt(patient.daysInCycle, 10);
-    const hospitalDate = parseLocalDate(patient.hospStartDate);
-    const ourDate = parseLocalDate(patient.ourStartDate);
-    let daysPassed = Math.floor((ourDate - hospitalDate) / (1000 * 60 * 60 * 24));
-    daysPassed = daysPassed < 0 ? 0 : daysPassed;
-    const remainingDays = totalDays - daysPassed;
-  
-    const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
-    const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
-    const schedule = getBagDurations(remainingDays, overrides, patient.isPreservativeFree || false);
-  
-    let current = new Date(ourDate);
-    const today = new Date();
-    const tomorrow = new Date();
-    tomorrow.setDate(today.getDate() + 1);
-  
-    for (let i = 0; i < schedule.length; i++) {
-      const startDate = new Date(current);
-      const duration = schedule[i];
-  
-      const isToday = startDate.toDateString() === today.toDateString();
-      const isTomorrow = startDate.toDateString() === tomorrow.toDateString();
-      const durationChanged = i > 0 && schedule[i] !== schedule[i - 1];
-  
-      // RED HIGHLIGHT (tomorrow bag is shorter than previous)
-      if (i > 0 && isTomorrow && schedule[i] < schedule[i - 1]) {
-        return 0;
-      }
-  
-      // GREEN HIGHLIGHTS
-      if ((i === 0 && isToday) || (isToday && durationChanged)) {
-        return 0;
-      }
-  
-      // YELLOW HIGHLIGHTS (tomorrow and NOT doing bags)
-      if (!showPtDoingBagsAlert) {
-        if ((i === 0 && isTomorrow) || (isTomorrow && durationChanged)) {
-          return 0;
-        }
-      }
-  
-      current.setDate(current.getDate() + duration);
-    }
-  
-    // DISCONNECT HIGHLIGHT
-    const disconnectDate = new Date(current);
-    if (
-      disconnectDate.toDateString() === today.toDateString() || // green
-      disconnectDate.toDateString() === tomorrow.toDateString() // yellow
-    ) {
-      return 0;
-    }
-  
-    // No visual highlights
-    return 1;
-  };  
-
-  const sortedPatients = useMemo(() => {
-    return [...savedPatients].sort((a, b) => getPatientHighlightRank(a) - getPatientHighlightRank(b));
-  }, [savedPatients]);   
+const sortedPatients = savedPatients;
+ 
 
   return (
     <div style={{ padding: 20 }}>
@@ -355,6 +296,11 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
   let backgroundColor = 'transparent';
   let bagAlert = null;
 
+if (isToday && showPtDoingBagsAlert === false) {
+    backgroundColor = '#AFE19B';
+    bagAlert = "Bag change due today. RN will perform. Confirm and log time.";
+  } 
+  
   if (
     i > 0 &&
     bag.durationDays < bagData[i - 1].durationDays &&
