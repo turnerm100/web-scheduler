@@ -304,7 +304,7 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
 
 if (isToday && showPtDoingBagsAlert === false) {
     backgroundColor = '#AFE19B';
-    bagAlert = "Bag change due today. RN will perform. Confirm and log time.";
+    bagAlert = "Bag change due today. Please confirm RN is schedule to see patient.";
   } 
   
   if (
@@ -323,7 +323,7 @@ if (isToday && showPtDoingBagsAlert === false) {
     bagAlert = "Confirm RN aware that aspiration of line is required when doing pump reprogram and bag change.";
   } else if (i === 0 && isToday) {
     backgroundColor = '#AFE19B';
-    bagAlert = "First bag hookup. Please enter hookup time.";
+    bagAlert = "First bag hookup. Please confirm RN scheduled for visit and have RN report hookup time.";
   } else if (isTodayDiff) {
     backgroundColor = '#AFE19B';
     bagAlert = "Pump reprogram due today.";
@@ -444,7 +444,7 @@ if (isToday && showPtDoingBagsAlert === false) {
     fontSize: '11px',
     lineHeight: 1.3
   }}>
-    RN to be scheduled for disconnect visit.
+    Please confirm RN scheduled for disconnect visit.
   </div>
 )}
   </div>

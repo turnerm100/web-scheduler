@@ -106,7 +106,6 @@ export default function PrintSchedule() {
       const date = new Date(year, month, d);
       const key = formatDateKey(date);
       const items = dayMap.get(key) || [];
-      const isReprogram = items.some(item => item.type === 'bag' && item.isReprogram);
 
       cells.push(
         <td
@@ -124,22 +123,22 @@ export default function PrintSchedule() {
         >
           <strong>{d}</strong>
           {items.map((item, index) => (
-<div
-  key={index}
-  style={{
-    marginTop: '5px',
-    background:
-      item.type === 'final-disconnect' ? '#d4edda' :
-      item.type === 'bag' && item.isReprogram ? '#d4edda' :
-      item.type === 'bag' ? '#eaf3fb' : 'transparent',
-    border: item.type === 'final-disconnect' ? '1px solid #155724' :
-            item.type === 'bag' && item.isReprogram ? '1px solid #155724' :
-            item.type === 'bag' ? '1px solid #153D64' : 'none',
-    borderRadius: '6px',
-    padding: '5px',
-    fontSize: '12px'
-  }}
->
+            <div
+              key={index}
+              style={{
+                marginTop: '5px',
+                background:
+                  item.type === 'final-disconnect' ? '#d4edda' :
+                  item.type === 'bag' && item.isReprogram ? '#d4edda' :
+                  item.type === 'bag' ? '#eaf3fb' : 'transparent',
+                border: item.type === 'final-disconnect' ? '1px solid #155724' :
+                        item.type === 'bag' && item.isReprogram ? '1px solid #155724' :
+                        item.type === 'bag' ? '1px solid #153D64' : 'none',
+                borderRadius: '6px',
+                padding: '5px',
+                fontSize: '12px'
+              }}
+            >
               {item.type === 'final-disconnect' && (
                 <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#155724' }}>
                   Final Disconnect – Blincyto Cycle Complete. A nurse will be doing your final disconnect.
@@ -154,6 +153,11 @@ export default function PrintSchedule() {
                   {item.isReprogram && (
                     <div style={{ color: 'green', fontWeight: 'bold', marginTop: '4px' }}>
                       Pump reprogram needed
+                    </div>
+                  )}
+                  {item.requiresRNVisit && (
+                    <div style={{ color: '#c0392b', fontWeight: 'bold', marginTop: '4px' }}>
+                      RN visit required for this bag change and pump reprogram.
                     </div>
                   )}
                 </>
@@ -197,11 +201,6 @@ export default function PrintSchedule() {
 
   if (!patient) return <div style={{ padding: '40px' }}>Loading...</div>;
 
-  // 🔍 DEBUG: Log key nursing info values
-console.log('pipsDoingBags:', patient?.pipsDoingBags);
-console.log('nursingVisitPlan:', patient?.nursingVisitPlan);
-console.log('nursingVisitDay:', patient?.nursingVisitDay);
-
   const schedule = generateSchedule();
 
   let disconnectDate = null;
@@ -214,12 +213,22 @@ console.log('nursingVisitDay:', patient?.nursingVisitDay);
   }
 
   const dayMap = new Map();
-  schedule.forEach((bag, i) => {
-    if (!dayMap.has(bag.dateKey)) dayMap.set(bag.dateKey, []);
-    const prev = i > 0 ? schedule[i - 1] : null;
-    const isReprogram = prev && bag.duration !== prev.duration;
-    dayMap.get(bag.dateKey).push({ type: 'bag', ...bag, isReprogram });
+  const volumeToNumber = v => parseInt(v.replace('ml', ''), 10) || 0;
+
+schedule.forEach((bag, i) => {
+  if (!dayMap.has(bag.dateKey)) dayMap.set(bag.dateKey, []);
+  const prev = i > 0 ? schedule[i - 1] : null;
+  const isReprogram = prev && bag.duration !== prev.duration;
+  const requiresRNVisit = prev && bag.duration < prev.duration;
+
+  dayMap.get(bag.dateKey).push({
+    type: 'bag',
+    ...bag,
+    isReprogram,
+    requiresRNVisit
   });
+});
+
 
   if (disconnectDateKey) {
     if (!dayMap.has(disconnectDateKey)) dayMap.set(disconnectDateKey, []);
@@ -256,26 +265,24 @@ console.log('nursingVisitDay:', patient?.nursingVisitDay);
         <div><strong>Final Disconnect:</strong> {disconnectDateKey || '[not calculated]'}</div>
       </div>
 
-      {/* 🟢 Nursing Info */}
-<div style={{ fontSize: '14px', marginBottom: '40px' }}>
-  <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
-  <p>
-    {patient?.pipsDoingBags?.toLowerCase?.() === 'yes' && (
-      <>All bag changes, central line care and lab draws (if ordered) will be managed by a Providence Infusion Registered Nurse. The RN visit day will coincide with your bag change schedule shown below. Please contact Providence Infusion and Pharmacy Services if you have any questions or concerns.</>
-    )}
+      <div style={{ fontSize: '14px', marginBottom: '40px' }}>
+        <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
+        <p>
+          {patient?.pipsDoingBags?.toLowerCase?.() === 'yes' && (
+            <>All bag changes, central line care and lab draws (if ordered) will be managed by a Providence Infusion Registered Nurse.</>
+          )}
 
-    {patient?.pipsDoingBags?.toLowerCase?.() === 'no' &&
-      patient?.nursingVisitPlan?.toLowerCase?.().includes('rn to do lab') && (
-        <>You or your caregiver have been taught to manage your own bag changes. Although you will be doing your own bag changes, a Providence Infusion and Pharmacy Services Registered Nurse will be managing your central line care and lab draws (if ordered). Your tentatively scheduled RN visit day is <strong>{patient.nursingVisitDay || '[not provided]'}</strong>. RN visits are not shown on the calendar below due to possible schedule changes. Please contact Providence Infusion and Pharmacy Services if you have any questions or concerns.</>
-    )}
+          {patient?.pipsDoingBags?.toLowerCase?.() === 'no' &&
+            patient?.nursingVisitPlan?.toLowerCase?.().includes('rn to do lab') && (
+              <>You or your caregiver have been taught to manage your own bag changes. A Providence RN will still visit weekly for central line care and labs. Tentative RN visit day: <strong>{patient.nursingVisitDay || '[not provided]'}</strong>.</>
+          )}
 
-    {patient?.pipsDoingBags?.toLowerCase?.() === 'no' &&
-      patient?.nursingVisitPlan?.toLowerCase?.().includes('lab/drsg done at hospital') && (
-        <>Providence Infusion and Pharmacy Services will be providing you will all neccessary supplies for managing your own Blincyto bag changes. Weekly central line care and lab draws (if ordered) will be managed by your clinic/providers office. Please contact Providence Infusion and Pharmacy Services if you have any questions or concerns.</>
-    )}
-  </p>
-</div>
-
+          {patient?.pipsDoingBags?.toLowerCase?.() === 'no' &&
+            patient?.nursingVisitPlan?.toLowerCase?.().includes('lab/drsg done at hospital') && (
+              <>You will manage your own bag changes. Dressing care and labs will be done at your clinic or provider’s office.</>
+          )}
+        </p>
+      </div>
 
       {monthGrids}
 
