@@ -19,31 +19,37 @@ export default function BagSchedule() {
   const [overrideEdits, setOverrideEdits] = useState({});
   const [bagTimeEdits, setBagTimeEdits] = useState({});
 
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'patients'), snapshot => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setPatients(data);
-      setSavedPatients(data); // ✅ Add this
-
-      const overrides = {};
-      const times = {};
-      data.forEach(patient => {
-        if (patient.bagOverrides) overrides[patient.id] = patient.bagOverrides;
-
-        if (patient.bagTimes?.bags) {
-          times[patient.id] = {
-            ...Object.fromEntries(patient.bagTimes.bags.map((t, i) => [i, t])),
-            disconnect: patient.bagTimes.disconnect ?? ''
-          };
-        }
+useEffect(() => {
+  const unsub = onSnapshot(collection(db, 'patients'), snapshot => {
+    const data = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(patient => {
+        const status = (patient.status || '').toLowerCase();
+        return status !== 'discharged' && status !== 'on hold';
       });
 
-      setOverrideEdits(overrides);
-      setBagTimeEdits(times);
+    setPatients(data);
+    setSavedPatients(data);
+
+    const overrides = {};
+    const times = {};
+    data.forEach(patient => {
+      if (patient.bagOverrides) overrides[patient.id] = patient.bagOverrides;
+
+      if (patient.bagTimes?.bags) {
+        times[patient.id] = {
+          ...Object.fromEntries(patient.bagTimes.bags.map((t, i) => [i, t])),
+          disconnect: patient.bagTimes.disconnect ?? ''
+        };
+      }
     });
 
-    return () => unsub();
-  }, []);
+    setOverrideEdits(overrides);
+    setBagTimeEdits(times);
+  });
+
+  return () => unsub();
+}, []);
 
   // ✅ Add this helper function right after the useEffect
   const refreshSavedPatients = async () => {

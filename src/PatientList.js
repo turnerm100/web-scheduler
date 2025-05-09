@@ -33,7 +33,7 @@ export default function PatientList() {
   return (
     <div style={{ padding: 20 }}>
       <h2>Active & Pending Patients</h2>
-      <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%' }}>
+      <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%', fontSize: '12px' }}>
         <thead>
           <tr>
             <th>Name</th>
@@ -41,6 +41,19 @@ export default function PatientList() {
             <th>DOB</th>
             <th>Status</th>
             <th>Hospital</th>
+            <th>Type</th>
+            <th>Dx</th>
+            <th>Pharm Team</th>
+            <th>Nurse Team</th>
+            <th>Interpreter</th>
+            <th>Line Type</th>
+            <th>Ext</th>
+            <th>Cycle</th>
+            <th>Days in Cycle</th>
+            <th>Blincyto Start Date</th>
+            <th>PIPS Start Date</th>
+            <th>Hookup Time</th>
+            <th>Preservative Free</th>
           </tr>
         </thead>
         <tbody>
@@ -58,6 +71,19 @@ export default function PatientList() {
               <td>{p.dob}</td>
               <td>{p.status}</td>
               <td>{p.hospital}</td>
+              <td>{p.type}</td>
+              <td>{p.dx}</td>
+              <td>{p.pharmTeam}</td>
+              <td>{p.nurseTeam}</td>
+              <td>{p.interpreter}</td>
+              <td>{p.lineType}</td>
+              <td>{p.ext}</td>
+              <td>{p.cycle}</td>
+              <td>{p.daysInCycle}</td>
+              <td>{p.hospStartDate}</td>
+              <td>{p.ourStartDate}</td>
+              <td>{p.hookupTime}</td>
+              <td>{p.isPreservativeFree ? 'Yes' : 'No'}</td>
             </tr>
           ))}
         </tbody>
