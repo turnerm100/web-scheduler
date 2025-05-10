@@ -214,9 +214,50 @@ alert('Overrides and times saved!');
     default: return { volume: '-', rate: '-' };
   }
 };
+const sortedPatients = useMemo(() => {
+  return [...savedPatients].sort((a, b) => {
+    const priorityColors = { '#FF4C4C': 1, '#F6F12B': 2, '#AFE19B': 3, 'transparent': 4 };
 
-const sortedPatients = savedPatients;
- 
+    const getPriority = (patient) => {
+      const totalDays = parseInt(patient.daysInCycle, 10);
+      const hospitalDate = parseLocalDate(patient.hospStartDate);
+      const ourDate = parseLocalDate(patient.ourStartDate);
+      let daysPassed = Math.floor((ourDate - hospitalDate) / (1000 * 60 * 60 * 24));
+      daysPassed = daysPassed < 0 ? 0 : daysPassed;
+      const remainingDays = totalDays - daysPassed;
+
+      const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
+      const schedule = getBagDurations(remainingDays, overrides, patient.isPreservativeFree || false);
+
+      let current = new Date(ourDate);
+      let highestPriority = 4;
+      const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
+
+      schedule.forEach((days, i) => {
+        const startDateObj = new Date(current);
+        const isTomorrowBag = isTomorrow(startDateObj);
+        const isToday = startDateObj.toDateString() === new Date().toDateString();
+        const prevBagDays = i > 0 ? schedule[i - 1] : null;
+
+        let backgroundColor = 'transparent';
+
+        if (isToday && showPtDoingBagsAlert === false) backgroundColor = '#AFE19B';
+        if (i > 0 && days < prevBagDays && isTomorrowBag) backgroundColor = '#FF4C4C';
+        else if (isTomorrowBag && !showPtDoingBagsAlert) backgroundColor = '#F6F12B';
+
+        if (showPtDoingBagsAlert && backgroundColor !== '#FF4C4C') backgroundColor = 'transparent';
+
+        highestPriority = Math.min(highestPriority, priorityColors[backgroundColor]);
+        current.setDate(current.getDate() + days);
+      });
+
+      return highestPriority;
+    };
+
+    return getPriority(a) - getPriority(b);
+  });
+}, [savedPatients, overrideEdits, bagTimeEdits]);
+
 
   return (
     <div style={{ padding: 20 }}>
