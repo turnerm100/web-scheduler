@@ -1,5 +1,5 @@
 // src/BagSchedule.js
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { db } from './firebase';
 import {
   collection,
@@ -13,7 +13,6 @@ import AddPatient from './AddPatient';
 import './BagSchedule.css';
 
 export default function BagSchedule() {
-  const [patients, setPatients] = useState([]);
   const [savedPatients, setSavedPatients] = useState([]); // ✅ Add this
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [overrideEdits, setOverrideEdits] = useState({});
@@ -28,7 +27,6 @@ useEffect(() => {
         return status !== 'discharged' && status !== 'on hold';
       });
 
-    setPatients(data);
     setSavedPatients(data);
 
     const overrides = {};
@@ -55,7 +53,6 @@ useEffect(() => {
   const refreshSavedPatients = async () => {
     const snapshot = await getDocs(collection(db, 'patients'));
     const updatedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setPatients(updatedData);
     setSavedPatients(updatedData);
   };
 
@@ -215,7 +212,7 @@ alert('Overrides and times saved!');
   }
 };
 
-const getRowHighlight = (patient) => {
+const getPatientPriority = (patient) => {
   const totalDays = parseInt(patient.daysInCycle, 10);
   const hospitalDate = parseLocalDate(patient.hospStartDate);
   const ourDate = parseLocalDate(patient.ourStartDate);
@@ -230,7 +227,54 @@ const getRowHighlight = (patient) => {
   const today = new Date().toDateString();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowString = tomorrow.toDateString();
+  const tomorrowStr = tomorrow.toDateString();
+
+  const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
+
+  let highestPriority = 4; // 1 = Red, 2 = Yellow, 3 = Green, 4 = None
+
+  for (let i = 0; i < schedule.length; i++) {
+    const days = schedule[i];
+    const startDateObj = new Date(current);
+    const isToday = startDateObj.toDateString() === today;
+    const isTomorrow = startDateObj.toDateString() === tomorrowStr;
+    const prev = i > 0 ? schedule[i - 1] : null;
+
+    if (showPtDoingBagsAlert && !(i === 0 && isToday)) {
+      current.setDate(current.getDate() + days);
+      continue;
+    }
+
+    if (i > 0 && days < prev && isTomorrow) return 1; // Red
+    if (isTomorrow && !showPtDoingBagsAlert && highestPriority > 2) highestPriority = 2; // Yellow
+    if (isToday && highestPriority > 3) highestPriority = 3; // Green
+
+    current.setDate(current.getDate() + days);
+  }
+
+  // Check disconnect priority
+  const lastBagEnd = new Date(current);
+  if (lastBagEnd.toDateString() === today && highestPriority > 3) highestPriority = 3;
+  if (lastBagEnd.toDateString() === tomorrowStr && highestPriority > 2) highestPriority = 2;
+
+  return highestPriority;
+};
+const getTopPatientAlert = (patient) => {
+  const totalDays = parseInt(patient.daysInCycle, 10);
+  const hospitalDate = parseLocalDate(patient.hospStartDate);
+  const ourDate = parseLocalDate(patient.ourStartDate);
+  let daysPassed = Math.floor((ourDate - hospitalDate) / (1000 * 60 * 60 * 24));
+  daysPassed = daysPassed < 0 ? 0 : daysPassed;
+  const remainingDays = totalDays - daysPassed;
+
+  const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
+  const schedule = getBagDurations(remainingDays, overrides, patient.isPreservativeFree || false);
+
+  let current = new Date(ourDate);
+  const today = new Date().toDateString();
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toDateString();
 
   const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
 
@@ -238,52 +282,65 @@ const getRowHighlight = (patient) => {
     const days = schedule[i];
     const startDateObj = new Date(current);
     const isToday = startDateObj.toDateString() === today;
-    const isTomorrowBag = startDateObj.toDateString() === tomorrowString;
+    const isTomorrowBag = startDateObj.toDateString() === tomorrowStr;
     const prevBagDays = i > 0 ? schedule[i - 1] : null;
 
-    let backgroundColor = 'transparent';
-
-    if (showPtDoingBagsAlert && !(i === 0 && isToday)) {
-      current.setDate(current.getDate() + days);
-      continue;
-    }
-
+    // RN visit and aspiration logic
     if (i > 0 && days < prevBagDays && isTomorrowBag) {
-      backgroundColor = '#FF4C4C';
-    } else if (isTomorrowBag && !showPtDoingBagsAlert) {
-      backgroundColor = '#F6F12B';
-    } else if (isToday) {
-      backgroundColor = '#AFE19B';
+      return "RN visit and aspiration required for tomorrow's bag change.";
     }
 
-    if (backgroundColor !== 'transparent') {
-      return backgroundColor;
+    // First bag today
+    if (isToday && i === 0) return "First bag hookup. Confirm RN is scheduled.";
+
+    // Aspiration today
+    if (i > 0 && days < prevBagDays && isToday) {
+      return "Aspiration required for bag change today.";
     }
+
+    // Bag today
+    if (isToday) return "Bag change due today.";
+
+    // Bag tomorrow
+    if (isTomorrowBag) return "Bag change due tomorrow.";
 
     current.setDate(current.getDate() + days);
   }
 
-  // Check disconnect highlighting at the end
+  // Check disconnect date alerts
   const lastBagEnd = new Date(current);
-  const isDisconnectToday = lastBagEnd.toDateString() === today;
-  const isDisconnectTomorrow = lastBagEnd.toDateString() === tomorrowString;
+  if (lastBagEnd.toDateString() === today) return "Cycle completion today.";
+  if (lastBagEnd.toDateString() === tomorrowStr) return "Cycle completion tomorrow.";
 
-  if (isDisconnectToday) return '#AFE19B';
-  if (isDisconnectTomorrow) return '#F6F12B';
+  // Only fallback here if no other alerts apply
+  if (showPtDoingBagsAlert) return "Pt/CG doing all bag changes.";
 
-  return 'transparent';
+  return "No urgent alert.";
 };
 
+const getAlertPriority = (alertText) => {
+  if (alertText === "RN visit and aspiration required for tomorrow's bag change.") return 1;
+  if (alertText === "Aspiration required for bag change today.") return 2;
+  if (alertText === "First bag hookup. Confirm RN is scheduled.") return 3;
+  if (alertText === "Bag change due today.") return 4;
+  if (alertText === "Cycle completion today.") return 5;
+  if (alertText === "Bag change due tomorrow.") return 6;
+  if (alertText === "Cycle completion tomorrow.") return 7;
+  if (
+    alertText === "Pt/CG doing all bag changes." ||
+    alertText === "No urgent alert."
+  ) return 8;
 
-const sortedPatients = useMemo(() => {
-  const priorityColors = { '#FF4C4C': 1, '#F6F12B': 2, '#AFE19B': 3, 'transparent': 4 };
+  return 99;
+};
 
-  return [...savedPatients].sort((a, b) => {
-    const priorityA = priorityColors[getRowHighlight(a)] || 4;
-    const priorityB = priorityColors[getRowHighlight(b)] || 4;
-    return priorityA - priorityB;
+const sortedByAlert = [...savedPatients]
+  .filter(p => p.hospStartDate && p.ourStartDate)
+  .sort((a, b) => {
+    const alertA = getTopPatientAlert(a);
+    const alertB = getTopPatientAlert(b);
+    return getAlertPriority(alertA) - getAlertPriority(alertB);
   });
-}, [savedPatients, overrideEdits, bagTimeEdits]);
 
   return (
     <div style={{ padding: 20 }}>
@@ -301,7 +358,7 @@ const sortedPatients = useMemo(() => {
           </tr>
         </thead>
         <tbody>
-          {sortedPatients.filter(p => p.hospStartDate && p.ourStartDate).map(patient => {
+          {sortedByAlert.map(patient => {
             const totalDays = parseInt(patient.daysInCycle, 10);
             const hospitalDate = parseLocalDate(patient.hospStartDate);
             const ourDate = parseLocalDate(patient.ourStartDate);
@@ -366,32 +423,37 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
   const isTodayDiff = isTodayAndDifferentFromPrevious(bag, bagData[i - 1]);
   const { volume, rate } = getBagDetails(bag.durationDays);
 
+  const isFirstBagToday = i === 0 && isToday;
+  const isPumpReprogram = isTodayDiff;
+  const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
+
   let backgroundColor = 'transparent';
   let bagAlert = null;
 
-if (isToday && showPtDoingBagsAlert === false) {
+  // Priority-based highlight logic
+  if (isToday && !showPtDoingBagsAlert) {
     backgroundColor = '#AFE19B';
     bagAlert = "Bag change due today. Please confirm RN is schedule to see patient.";
-  } 
-  
+  }
+
   if (
     i > 0 &&
     bag.durationDays < bagData[i - 1].durationDays &&
     isTomorrowBag
   ) {
-    backgroundColor = '#FF4C4C'; // Red highlight
-    bagAlert = "RN visit and line aspiration required for tomorrows bag change. Call pt/cg for time remaining on pump and log bag change time below.";
+    backgroundColor = '#FF4C4C';
+    bagAlert = "RN visit and line aspiration required for tomorrow's bag change. Call pt/cg for time remaining on pump and log bag change time below.";
   } else if (
     i > 0 &&
     bag.durationDays < bagData[i - 1].durationDays &&
     isToday
   ) {
-    backgroundColor = '#AFE19B'; // Green highlight
+    backgroundColor = '#AFE19B';
     bagAlert = "Confirm RN aware that aspiration of line is required when doing pump reprogram and bag change.";
-  } else if (i === 0 && isToday) {
+  } else if (isFirstBagToday) {
     backgroundColor = '#AFE19B';
     bagAlert = "First bag hookup. Please confirm RN scheduled for visit and have RN report hookup time.";
-  } else if (isTodayDiff) {
+  } else if (isPumpReprogram) {
     backgroundColor = '#AFE19B';
     bagAlert = "Pump reprogram due today.";
   } else if (i === 0 && isTomorrowBag && !showPtDoingBagsAlert) {
@@ -402,11 +464,14 @@ if (isToday && showPtDoingBagsAlert === false) {
     bagAlert = "Call pt/cg today for remaining time on pump. Calculate and log time.";
   }
 
-  if (
+  // ✅ Suppress highlights if patient/caregiver is doing bags
+  const suppressHighlight =
     showPtDoingBagsAlert &&
-    !(i === 0 && isToday || isTodayDiff) &&
-    backgroundColor !== '#FF4C4C'
-  ) {
+    !isFirstBagToday &&
+    !isPumpReprogram &&
+    backgroundColor !== '#FF4C4C';
+
+  if (suppressHighlight) {
     backgroundColor = 'transparent';
     bagAlert = "Pt/CG doing bag changes.";
   }
@@ -429,20 +494,21 @@ if (isToday && showPtDoingBagsAlert === false) {
       Start: {bag.startDate}<br />
       Volume: {volume}<br />
       Rate: {rate}<br />
-      {bagAlert && (
-        <div
-          style={{
-            color:
-              bagAlert === "Pt/CG doing bag changes." ? '#0070C0' :
-              bagAlert === "Confirm RN aware that aspiration of line is required when doing pump reprogram and bag change." ? 'red' :
-              'black',
-            fontWeight: 'bold',
-            marginTop: '5px'
-          }}
-        >
-          {bagAlert}
-        </div>
-      )}
+ {bagAlert && (
+  <div
+    style={{
+      color:
+        bagAlert === "Pt/CG doing bag changes." ? '#0070C0' :
+        bagAlert === "Confirm RN aware that aspiration of line is required when doing pump reprogram and bag change." ? 'red' :
+        'black',
+      fontWeight: 'bold',
+      marginTop: '5px'
+    }}
+  >
+    {bagAlert}
+  </div>
+)}
+
 
       <div style={{ marginTop: '8px' }}>
         <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
@@ -477,6 +543,7 @@ if (isToday && showPtDoingBagsAlert === false) {
     </div>
   );
 })}
+
 
                   </div>
                 </td>
