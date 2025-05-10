@@ -14,7 +14,7 @@ export default function PrintSchedule() {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         setPatient({ id, ...docSnap.data() });
-        setTimeout(() => window.print(), 500);
+        // Removed auto-print
       } else {
         alert('Patient not found.');
       }
@@ -248,57 +248,74 @@ schedule.forEach((bag, i) => {
     currentMonth.setMonth(currentMonth.getMonth() + 1);
   }
 
-  return (
-    <div style={{ padding: '40px', fontFamily: 'Arial' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '10px' }}>Blincyto Calendar</h1>
-      <h2 style={{ textAlign: 'center', marginTop: '0' }}>{patient.name}</h2>
+ return (
+  <div style={{ padding: '40px', fontFamily: 'Arial' }}>
+    <button
+      onClick={() => window.print()}
+      style={{
+        marginBottom: '20px',
+        padding: '10px 20px',
+        backgroundColor: '#153D64',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        fontSize: '16px'
+      }}
+      className="no-print"
+    >
+      Print Schedule
+    </button>
 
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '40px',
-        marginBottom: '30px',
-        fontSize: '14px'
-      }}>
-        <div><strong>Cycle Days:</strong> {patient.daysInCycle}</div>
-        <div><strong>Start Date:</strong> {patient.ourStartDate}</div>
-        <div><strong>Final Disconnect:</strong> {disconnectDateKey || '[not calculated]'}</div>
-      </div>
+    <h1 style={{ textAlign: 'center', marginBottom: '10px' }}>Blincyto Calendar</h1>
+    <h2 style={{ textAlign: 'center', marginTop: '0' }}>{patient.name}</h2>
 
-      <div style={{ fontSize: '14px', marginBottom: '40px' }}>
-        <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
-        <p>
-          {patient?.pipsDoingBags?.toLowerCase?.() === 'yes' && (
-            <>All bag changes, central line care and lab draws (if ordered) will be managed by a Providence Infusion Registered Nurse.</>
-          )}
-
-          {patient?.pipsDoingBags?.toLowerCase?.() === 'no' &&
-            patient?.nursingVisitPlan?.toLowerCase?.().includes('rn to do lab') && (
-              <>You or your caregiver have been taught to manage your own bag changes. A Providence RN will still visit weekly for central line care and labs. Tentative RN visit day: <strong>{patient.nursingVisitDay || '[not provided]'}</strong>.</>
-          )}
-
-          {patient?.pipsDoingBags?.toLowerCase?.() === 'no' &&
-            patient?.nursingVisitPlan?.toLowerCase?.().includes('lab/drsg done at hospital') && (
-              <>You will manage your own bag changes. Dressing care and labs will be done at your clinic or provider’s office.</>
-          )}
-        </p>
-      </div>
-
-      {monthGrids}
-
-      <style>{`
-        @media print {
-          @page {
-            size: landscape;
-          }
-          * { visibility: visible !important; }
-          button, nav, .no-print { display: none !important; }
-          body { background: white; }
-          td, tr, table, div, h1, h2, h3, p {
-            page-break-inside: avoid;
-          }
-        }
-      `}</style>
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '40px',
+      marginBottom: '30px',
+      fontSize: '14px'
+    }}>
+      <div><strong>Cycle Days:</strong> {patient.daysInCycle}</div>
+      <div><strong>Start Date:</strong> {patient.ourStartDate}</div>
+      <div><strong>Final Disconnect:</strong> {disconnectDateKey || '[not calculated]'}</div>
     </div>
-  );
+
+    <div style={{ fontSize: '14px', marginBottom: '40px' }}>
+      <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
+      <p>
+        {patient?.pipsDoingBags?.toLowerCase?.() === 'yes' && (
+          <>All bag changes, central line care and lab draws (if ordered) will be managed by a Providence Infusion Registered Nurse.</>
+        )}
+
+        {patient?.pipsDoingBags?.toLowerCase?.() === 'no' &&
+          patient?.nursingVisitPlan?.toLowerCase?.().includes('rn to do lab') && (
+            <>You or your caregiver have been taught to manage your own bag changes. A Providence RN will still visit weekly for central line care and labs. Tentative RN visit day: <strong>{patient.nursingVisitDay || '[not provided]'}</strong>.</>
+        )}
+
+        {patient?.pipsDoingBags?.toLowerCase?.() === 'no' &&
+          patient?.nursingVisitPlan?.toLowerCase?.().includes('lab/drsg done at hospital') && (
+            <>You will manage your own bag changes. Dressing care and labs will be done at your clinic or provider’s office.</>
+        )}
+      </p>
+    </div>
+
+    {monthGrids}
+
+    <style>{`
+      @media print {
+        @page {
+          size: landscape;
+        }
+        * { visibility: visible !important; }
+        button, nav, .no-print { display: none !important; }
+        body { background: white; }
+        td, tr, table, div, h1, h2, h3, p {
+          page-break-inside: avoid;
+        }
+      }
+    `}</style>
+  </div>
+);
 }
