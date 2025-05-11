@@ -7,13 +7,13 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  getDocs // ✅ ← this is the missing piece
+  getDocs 
 } from 'firebase/firestore';
 import AddPatient from './AddPatient';
 import './BagSchedule.css';
 
 export default function BagSchedule() {
-  const [savedPatients, setSavedPatients] = useState([]); // ✅ Add this
+  const [savedPatients, setSavedPatients] = useState([]); // 
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [overrideEdits, setOverrideEdits] = useState({});
   const [bagTimeEdits, setBagTimeEdits] = useState({});
@@ -49,7 +49,6 @@ useEffect(() => {
   return () => unsub();
 }, []);
 
-  // ✅ Add this helper function right after the useEffect
   const refreshSavedPatients = async () => {
     const snapshot = await getDocs(collection(db, 'patients'));
     const updatedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

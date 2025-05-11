@@ -286,17 +286,17 @@ schedule.forEach((bag, i) => {
       <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
       <p>
         {patient?.pipsDoingBags?.toLowerCase?.() === 'yes' && (
-          <>All bag changes, central line care and lab draws (if ordered) will be managed by a Providence Infusion Registered Nurse.</>
+          <>All bag changes, central line care and lab draws (if ordered) will be managed by a Providence Infusion Registered Nurse. If you have any questions or concerns, please contact Providence Infusion and Pharmacy Services.</>
         )}
 
         {patient?.pipsDoingBags?.toLowerCase?.() === 'no' &&
           patient?.nursingVisitPlan?.toLowerCase?.().includes('rn to do lab') && (
-            <>You or your caregiver have been taught to manage your own bag changes. A Providence RN will still visit weekly for central line care and labs. Tentative RN visit day: <strong>{patient.nursingVisitDay || '[not provided]'}</strong>.</>
+            <>You or your caregiver have been taught to manage your own bag changes. A Providence RN will still visit weekly for central line care and labs. The tentative RN visit day is: <strong>{patient.nursingVisitDay || '[not provided]'}</strong>. If you have any questions or concerns, please contact Providence Infusion and Pharmacy Services.</>
         )}
 
         {patient?.pipsDoingBags?.toLowerCase?.() === 'no' &&
           patient?.nursingVisitPlan?.toLowerCase?.().includes('lab/drsg done at hospital') && (
-            <>You will manage your own bag changes. Dressing care and labs will be done at your clinic or provider’s office.</>
+            <>You or a family member/caregiver will be managing your own bag changes. Central line care and labs will be managed at your hospital clinic or provider’s office. These visits should have already been arranged. A RN visit may be required for certain bag change situations. If there are any changes to your bag change schedule, a member of the Providence Infusion and Pharmacy services care team will notify you. Please contact us if you have any questions or concerns.</>
         )}
       </p>
     </div>
