@@ -6,8 +6,7 @@ import {
   onSnapshot,
   doc,
   updateDoc,
-  deleteDoc,
-  getDocs 
+  getDocs // ✅ Add this
 } from 'firebase/firestore';
 import AddPatient from './AddPatient';
 import './BagSchedule.css';
@@ -211,53 +210,6 @@ alert('Overrides and times saved!');
   }
 };
 
-const getPatientPriority = (patient) => {
-  const totalDays = parseInt(patient.daysInCycle, 10);
-  const hospitalDate = parseLocalDate(patient.hospStartDate);
-  const ourDate = parseLocalDate(patient.ourStartDate);
-  let daysPassed = Math.floor((ourDate - hospitalDate) / (1000 * 60 * 60 * 24));
-  daysPassed = daysPassed < 0 ? 0 : daysPassed;
-  const remainingDays = totalDays - daysPassed;
-
-  const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
-  const schedule = getBagDurations(remainingDays, overrides, patient.isPreservativeFree || false);
-
-  let current = new Date(ourDate);
-  const today = new Date().toDateString();
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toDateString();
-
-  const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
-
-  let highestPriority = 4; // 1 = Red, 2 = Yellow, 3 = Green, 4 = None
-
-  for (let i = 0; i < schedule.length; i++) {
-    const days = schedule[i];
-    const startDateObj = new Date(current);
-    const isToday = startDateObj.toDateString() === today;
-    const isTomorrow = startDateObj.toDateString() === tomorrowStr;
-    const prev = i > 0 ? schedule[i - 1] : null;
-
-    if (showPtDoingBagsAlert && !(i === 0 && isToday)) {
-      current.setDate(current.getDate() + days);
-      continue;
-    }
-
-    if (i > 0 && days < prev && isTomorrow) return 1; // Red
-    if (isTomorrow && !showPtDoingBagsAlert && highestPriority > 2) highestPriority = 2; // Yellow
-    if (isToday && highestPriority > 3) highestPriority = 3; // Green
-
-    current.setDate(current.getDate() + days);
-  }
-
-  // Check disconnect priority
-  const lastBagEnd = new Date(current);
-  if (lastBagEnd.toDateString() === today && highestPriority > 3) highestPriority = 3;
-  if (lastBagEnd.toDateString() === tomorrowStr && highestPriority > 2) highestPriority = 2;
-
-  return highestPriority;
-};
 const getTopPatientAlert = (patient) => {
   const totalDays = parseInt(patient.daysInCycle, 10);
   const hospitalDate = parseLocalDate(patient.hospStartDate);
@@ -275,6 +227,7 @@ const getTopPatientAlert = (patient) => {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toDateString();
 
+ // ✅ Re-add this line here
   const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
 
   for (let i = 0; i < schedule.length; i++) {
@@ -395,7 +348,6 @@ const sortedByAlert = [...savedPatients]
             const disconnectDateObj = lastBag ? lastBag.endDateObj : null;
             const isDisconnectToday = disconnectDate === formatDate(new Date());
             const isDisconnectTomorrow = disconnectDateObj && isTomorrow(disconnectDateObj);
-            const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
 
             let disconnectCellBg = 'transparent';
 if (isDisconnectToday) disconnectCellBg = '#AFE19B'; // Updated green

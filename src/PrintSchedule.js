@@ -213,7 +213,6 @@ export default function PrintSchedule() {
   }
 
   const dayMap = new Map();
-  const volumeToNumber = v => parseInt(v.replace('ml', ''), 10) || 0;
 
 schedule.forEach((bag, i) => {
   if (!dayMap.has(bag.dateKey)) dayMap.set(bag.dateKey, []);

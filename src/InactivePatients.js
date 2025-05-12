@@ -1,7 +1,7 @@
 // src/InactivePatients.js
 import React, { useEffect, useState } from 'react';
 import { db } from './firebase';
-import { collection, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, deleteDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
 import AddPatient from './AddPatient';
 
 export default function InactivePatients() {
@@ -10,7 +10,7 @@ export default function InactivePatients() {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'patients'), (snapshot) => {
+    const unsub = onSnapshot(collection(db, 'inactivePatients'), (snapshot) => {
       const inactive = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(p => p.status === 'On Hold' || p.status === 'Discharged')
@@ -21,8 +21,17 @@ export default function InactivePatients() {
   }, []);
 
   const handleStatusChange = async (id, newStatus) => {
-    await updateDoc(doc(db, 'patients', id), { status: newStatus });
-  };
+  const patient = patients.find(p => p.id === id);
+  const updatedPatient = { ...patient, status: newStatus };
+
+  if (newStatus === 'Active' || newStatus === 'Pending') {
+    await setDoc(doc(db, 'patients', id), updatedPatient);
+    await deleteDoc(doc(db, 'inactivePatients', id));
+  } else {
+    await updateDoc(doc(db, 'inactivePatients', id), { status: newStatus });
+  }
+};
+
 
   const handleDelete = async (id) => {
     const confirm = window.confirm('Delete this patient permanently?');
