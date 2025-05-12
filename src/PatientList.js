@@ -1,7 +1,6 @@
-// src/PatientList.js
 import React, { useEffect, useState } from 'react';
 import { db } from './firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import AddPatient from './AddPatient';
 
 export default function PatientList() {
@@ -28,6 +27,27 @@ export default function PatientList() {
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedPatient(null);
+  };
+
+  const handleStatusChange = async (patient, newStatus) => {
+    if (newStatus === patient.status) return;
+
+    const confirmed = window.confirm(
+      'Would you like to change the status of this patient?\n\nIf you move to On Hold or Discharged, they will no longer be visible on the Active Patient List.'
+    );
+
+    if (!confirmed) return;
+
+    const updatedPatient = { ...patient, status: newStatus };
+
+    if (newStatus === 'On Hold' || newStatus === 'Discharged') {
+      // Move to inactivePatients collection
+      await setDoc(doc(db, 'inactivePatients', patient.id), updatedPatient);
+      await deleteDoc(doc(db, 'patients', patient.id));
+    } else {
+      // Stay in active list and just update status
+      await updateDoc(doc(db, 'patients', patient.id), { status: newStatus });
+    }
   };
 
   return (
@@ -62,7 +82,17 @@ export default function PatientList() {
               </td>
               <td>{p.mrn}</td>
               <td>{p.dob}</td>
-              <td>{p.status}</td>
+              <td>
+                <select
+                  value={p.status}
+                  onChange={(e) => handleStatusChange(p, e.target.value)}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Pending">Pending</option>
+                  <option value="On Hold">On Hold</option>
+                  <option value="Discharged">Discharged</option>
+                </select>
+              </td>
               <td>{p.hospital}</td>
               <td>{p.type}</td>
               <td>{p.pharmTeam}</td>

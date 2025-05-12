@@ -660,7 +660,7 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
   borderTop: '1px solid #ccc',
   zIndex: 1000
 }}>
-  <strong>Disclaimer:</strong> This Blincyto Tracking Tool is intended for scheduling support only. It is an aid to help build projected bag change schedules based on available data. All calculated schedules are estimates and must be reviewed and confirmed by qualified clinical staff. This tool does not replace clinical judgment, institutional protocols, or physician orders. Always confirm infusion plans with the PIPS care team and Pharmacy before implementation.
+  <strong>Disclaimer:</strong> This Blincyto Tracking Tool is intended for scheduling support only. It is an aid to help build projected bag change schedules based on available data. All calculated schedules are estimates and must be reviewed and confirmed by qualified clinical staff. This tool does not replace clinical judgment, institutional protocols, or physician orders. Always confirm infusion plans with the Providence Infusion and Pharmacy Services care team before implementation.
 </div>
 
 {selectedPatient && (

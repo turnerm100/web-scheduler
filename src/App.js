@@ -26,17 +26,25 @@ function App() {
         top: 0,
         zIndex: 999,
         display: 'flex',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 10,
+        justifyContent: 'space-between',
+        padding: '10px 20px',
         background: '#215C98',
         color: 'white',
         boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
       }}>
-        <h1 style={{ margin: 0, lineHeight: 1.3, fontSize: '16px', textAlign: 'center' }}>
-          Providence Infusion and Pharmacy Services<br />
-          Blincyto Tracking Tool
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+<img
+  src={`${process.env.PUBLIC_URL}/providencelogo.png`}
+  alt="Providence Logo"
+  style={{ height: '40px', marginRight: '15px' }}
+/>
+
+          <h1 style={{ margin: 0, lineHeight: 1.3, fontSize: '16px' }}>
+            Providence Infusion and Pharmacy Services<br />
+            Blincyto Tracking Tool
+          </h1>
+        </div>
         <div>
           <button className="rounded-button" onClick={() => setView('bagSchedule')} style={{ marginRight: 10 }}>
             Bag Change Schedule
