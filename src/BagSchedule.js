@@ -27,9 +27,17 @@ useEffect(() => {
         return status !== 'discharged' && status !== 'on hold';
       });
 
-    setSavedPatients(data);
-    setDisplayPatients(data); // ✅ Show initial unsorted data
+setSavedPatients(data);
 
+const sorted = [...data]
+  .filter(p => p.hospStartDate && p.ourStartDate)
+  .sort((a, b) => {
+    const alertA = getTopPatientAlert(a);
+    const alertB = getTopPatientAlert(b);
+    return getAlertPriority(alertA) - getAlertPriority(alertB);
+  });
+
+setDisplayPatients(sorted);
 
     const overrides = {};
     const times = {};
