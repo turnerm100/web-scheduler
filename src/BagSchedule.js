@@ -251,7 +251,7 @@ const getTopPatientAlert = (patient) => {
   const tomorrowStr = tomorrow.toDateString();
 
  // ✅ Re-add this line here
-  const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
+  const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'pt/cg';
 
   for (let i = 0; i < schedule.length; i++) {
     const days = schedule[i];
@@ -391,7 +391,7 @@ else if (isDisconnectTomorrow) disconnectCellBg = '#F6F12B'; // Yellow
 
   const isFirstBagToday = i === 0 && isToday;
   const isPumpReprogram = isTodayDiff;
-  const showPtDoingBagsAlert = patient.pipsBagChanges?.toString().toLowerCase() === 'no';
+const showPtDoingBagsAlert = patient.bagChangeBy?.toString().toLowerCase() === 'pt/cg';
 
   let backgroundColor = 'transparent';
   let bagAlert = null;

@@ -9,10 +9,11 @@ export default function AddPatient({ editData, onClose }) {
   const [formData, setFormData] = useState({
     name: '', mrn: '', dob: '', type: '', status: '', dx: '', hospital: '',
     pharmTeam: '', nurseTeam: '', interpreter: '', readWriteLang: '', notes: '',
-    lineType: '', ext: '', cycle: '', daysInCycle: '', pipsBagChanges: '',
+    lineType: '', ext: '', cycle: '', daysInCycle: '', bagChangeBy: '',
     hospStartDate: '', ourStartDate: '', hookupTime: '',
     isPreservativeFree: false,
-    nursingVisitPlan: '',
+    centralLineCareBy: '',  
+    labsManagedBy: '',
     nursingVisitDay: ''
   });
 
@@ -20,49 +21,42 @@ export default function AddPatient({ editData, onClose }) {
     if (editData) setFormData(editData);
   }, [editData]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+const handleChange = (e) => {
+  const { name, value } = e.target;
 
-    if (name === 'pipsBagChanges') {
-      if (value === 'Yes') {
-        setFormData(prev => ({
-          ...prev,
-          [name]: value,
-          nursingVisitPlan: 'RN will be doing bag/drsg changes and labs if ordered.',
-          nursingVisitDay: 'RN visit will coincide with bag change schedule.'
-        }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          [name]: value,
-          nursingVisitPlan: '',
-          nursingVisitDay: ''
-        }));
-      }
-    } else if (name === 'nursingVisitPlan') {
-      if (!formData.pipsBagChanges) {
-        alert('Please select "PIPS doing Bag Changes?" before choosing a Nursing Visit Plan.');
-        return;
-      }
-    
-      let updatedVisitDay = formData.nursingVisitDay;
-    
-      if (formData.pipsBagChanges === 'No' && value === 'Pt/Cg doing bag changes and lab/drsg done at hospital/clinic.') {
-        updatedVisitDay = 'Pt doing drsg/labs at Hospital/Clinic';
-      } else if (value === 'RN to do lab/drsg only. Pt/cg doing bag changes.') {
-        updatedVisitDay = '';
-      }
-    
-      setFormData(prev => ({
+  // 1. If changing Blincyto Bag Changes field
+  if (name === 'bagChangeBy') {
+    setFormData(prev => {
+      const shouldAutoFillRNVisit = prev.centralLineCareBy === 'Providence Infusion';
+      return {
         ...prev,
         [name]: value,
-        nursingVisitDay: updatedVisitDay
-      }));
-    }
-     else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
-  };
+        nursingVisitDay: value === 'Providence Infusion' && shouldAutoFillRNVisit
+          ? 'RN visits will coincide with bag change days.'
+          : prev.nursingVisitDay // don't change unless both conditions are met
+      };
+    });
+    return;
+  }
+
+  // 2. If changing Central Line Care field
+  if (name === 'centralLineCareBy') {
+    setFormData(prev => {
+      const shouldAutoFillRNVisit = value === 'Providence Infusion' && prev.bagChangeBy === 'Providence Infusion';
+      return {
+        ...prev,
+        [name]: value,
+        nursingVisitDay: value === 'Providence Infusion'
+          ? (shouldAutoFillRNVisit ? 'RN visits will coincide with bag change days.' : prev.nursingVisitDay)
+          : '' // clear if not managed by Providence
+      };
+    });
+    return;
+  }
+
+  // Default
+  setFormData(prev => ({ ...prev, [name]: value }));
+};
 
   const handleSubmit = async (e) => {
   e.preventDefault();
@@ -76,13 +70,11 @@ export default function AddPatient({ editData, onClose }) {
     if (editData) {
       await updateDoc(doc(db, 'patients', editData.id), {
         ...formData,
-        pipsDoingBags: formData.pipsBagChanges // 🔥 critical fix here
       });
       alert('Patient updated successfully!');
     } else {
       await addDoc(collection(db, 'patients'), {
         ...formData,
-        pipsDoingBags: formData.pipsBagChanges,
         createdAt: Timestamp.now()
       });
       alert('Patient added successfully!');
@@ -223,12 +215,12 @@ export default function AddPatient({ editData, onClose }) {
             'Yes - Russian', 'Yes - Japanese', 'Yes - Arabic', 'Yes - Vietnamese', 'Yes - Portugese', 'Yes - Other'
           ])}
           {renderSelect('Reads/Writes in their language', 'readWriteLang', ['Yes', 'No'])}
+          {renderSelect('Line Type', 'lineType', ['Port', 'PICC - SL', 'PICC - DL', 'PICC - TL', 'CVC Tunneled - SL', 'CVC Tunneled - DL', 'CVC Tunneled - TL', 'Midline - SL', 'Midline - DL', 'Midline - TL'])}
+          {renderSelect('Extension Added?', 'ext', ['No', 'Yes-7"', 'Yes-14"'])}
           <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'flex-start' }}>
             <label style={{ width: '250px' }}><strong>Notes:</strong></label>
             <textarea name="notes" value={formData.notes || ''} onChange={handleChange} style={{ width: '400px', height: '80px' }} />
           </div>
-          {renderSelect('Line Type', 'lineType', ['Port', 'PICC - SL', 'PICC - DL', 'PICC - TL', 'CVC Tunneled - SL', 'CVC Tunneled - DL', 'CVC Tunneled - TL', 'Midline - SL', 'Midline - DL', 'Midline - TL'])}
-          {renderSelect('Extension Added?', 'ext', ['No', 'Yes-7"', 'Yes-14"'])}
         </>
       )}
 
@@ -237,17 +229,18 @@ export default function AddPatient({ editData, onClose }) {
         <>
           {renderSelect('Blincyto Cycle', 'cycle', ['Cycle 1', 'Cycle 2', 'Cycle 3', 'Cycle 4', 'Cycle 5'])}
           {renderSelect('# Days in Cycle', 'daysInCycle', Array.from({ length: 28 }, (_, i) => (28 - i).toString()))}
-          {renderSelect('PIPS doing Bag Changes?', 'pipsBagChanges', ['Yes', 'No'])}
+          {renderSelect('Blincyto bag changes managed by', 'bagChangeBy', ['Providence Infusion', 'Pt/CG'])}
+          {renderSelect('Central Line care managed by', 'centralLineCareBy', ['Providence Infusion', 'Hospital/Clinic'])}
 
-          {renderSelect('Nursing Visit Plan', 'nursingVisitPlan',
-            formData.pipsBagChanges === 'Yes'
-              ? ['RN will be doing bag/drsg changes and labs if ordered.']
-              : ['RN to do lab/drsg only. Pt/cg doing bag changes.', 'Pt/Cg doing bag changes and lab/drsg done at hospital/clinic.'],
-            formData.pipsBagChanges === 'Yes')}
+{renderSelect('Labs managed by', 'labsManagedBy', ['Providence Infusion', 'Hospital/Clinic', 'Not ordered'])}
 
-          {formData.pipsBagChanges === 'No' && formData.nursingVisitPlan === 'RN to do lab/drsg only. Pt/cg doing bag changes.'
-            ? renderSelect('RN Visit Day', 'nursingVisitDay', ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])
-            : renderField('RN Visit Day', 'nursingVisitDay')}
+
+{renderSelect(
+  'RN Visit Day',
+  'nursingVisitDay',
+  ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'RN visits will coincide with bag change days.'],
+  formData.centralLineCareBy !== 'Providence Infusion' // 🔒 disable if not Providence
+)}
 
           {renderField('Blincyto Start Date', 'hospStartDate', 'date')}
           {renderField('PIPS start Date', 'ourStartDate', 'date')}
@@ -262,6 +255,15 @@ export default function AddPatient({ editData, onClose }) {
               </span>
             </label>
           </div>
+<div style={{ marginBottom: '12px', display: 'flex', alignItems: 'flex-start', marginTop: '16px' }}>
+  <label style={{ width: '250px' }}><strong>Notes:</strong></label>
+  <textarea
+    name="notes"
+    value={formData.notes || ''}
+    onChange={handleChange}
+    style={{ width: '400px', height: '80px' }}
+  />
+</div>
           <div style={{ marginTop: '16px' }}>
   <button
     type="button"
@@ -272,8 +274,9 @@ export default function AddPatient({ editData, onClose }) {
           ...prev,
           cycle: '',
           daysInCycle: '',
-          pipsBagChanges: '',
-          nursingVisitPlan: '',
+          bagChangeBy: '',
+          centralLineCareBy: '',
+          labsManagedBy: '',
           nursingVisitDay: '',
           hospStartDate: '',
           ourStartDate: '',
