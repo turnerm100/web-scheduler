@@ -13,6 +13,7 @@ import './BagSchedule.css';
 
 export default function BagSchedule() {
   const [savedPatients, setSavedPatients] = useState([]); // 
+  const [displayPatients, setDisplayPatients] = useState([]); // ✅ Add this new state
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [overrideEdits, setOverrideEdits] = useState({});
   const [bagTimeEdits, setBagTimeEdits] = useState({});
@@ -27,6 +28,8 @@ useEffect(() => {
       });
 
     setSavedPatients(data);
+    setDisplayPatients(data); // ✅ Show initial unsorted data
+
 
     const overrides = {};
     const times = {};
@@ -48,11 +51,23 @@ useEffect(() => {
   return () => unsub();
 }, []);
 
-  const refreshSavedPatients = async () => {
-    const snapshot = await getDocs(collection(db, 'patients'));
-    const updatedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setSavedPatients(updatedData);
-  };
+const refreshSavedPatients = async () => {
+  const snapshot = await getDocs(collection(db, 'patients'));
+  const updatedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+  setSavedPatients(updatedData);
+
+  const sorted = [...updatedData]
+    .filter(p => p.hospStartDate && p.ourStartDate)
+    .sort((a, b) => {
+      const alertA = getTopPatientAlert(a);
+      const alertB = getTopPatientAlert(b);
+      return getAlertPriority(alertA) - getAlertPriority(alertB);
+    });
+
+  setDisplayPatients(sorted); // ✅ Sorted after save
+};
+
 
   const handleOverrideChange = (patientId, index, value) => {
     setOverrideEdits(prev => ({
@@ -286,14 +301,6 @@ const getAlertPriority = (alertText) => {
   return 99;
 };
 
-const sortedByAlert = [...savedPatients]
-  .filter(p => p.hospStartDate && p.ourStartDate)
-  .sort((a, b) => {
-    const alertA = getTopPatientAlert(a);
-    const alertB = getTopPatientAlert(b);
-    return getAlertPriority(alertA) - getAlertPriority(alertB);
-  });
-
   return (
     <div style={{ padding: 20 }}>
       <h2>Blincyto Bag Change Schedule</h2>
@@ -310,7 +317,7 @@ const sortedByAlert = [...savedPatients]
           </tr>
         </thead>
         <tbody>
-          {sortedByAlert.map(patient => {
+            {displayPatients.map(patient => {
             const totalDays = parseInt(patient.daysInCycle, 10);
             const hospitalDate = parseLocalDate(patient.hospStartDate);
             const ourDate = parseLocalDate(patient.ourStartDate);
