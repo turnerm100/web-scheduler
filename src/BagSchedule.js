@@ -299,8 +299,9 @@ const getAlertPriority = (alertText) => {
   if (alertText === "First bag hookup. Confirm RN is scheduled.") return 3;
   if (alertText === "Bag change due today.") return 4;
   if (alertText === "Cycle completion today.") return 5;
-  if (alertText === "Bag change due tomorrow.") return 6;
-  if (alertText === "Cycle completion tomorrow.") return 7;
+  if (alertText === "Cycle completion tomorrow.") return 6;
+  if (alertText === "Bag change due tomorrow.") return 7;
+  
   if (
     alertText === "Pt/CG doing all bag changes." ||
     alertText === "No urgent alert."
