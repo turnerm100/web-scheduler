@@ -50,59 +50,70 @@ export default function PatientList() {
     }
   };
 
+  const getDisconnectDate = (startDateStr, days) => {
+  if (!startDateStr || !days) return '';
+  const startDate = new Date(startDateStr);
+  if (isNaN(startDate)) return '';
+  const disconnectDate = new Date(startDate);
+  disconnectDate.setDate(startDate.getDate() + Number(days));
+  return disconnectDate.toLocaleDateString(); // Format: MM/DD/YYYY
+};
+
   return (
     <div style={{ padding: 20 }}>
       <h2>Active & Pending Patients</h2>
       <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%', fontSize: '12px' }}>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>MRN</th>
-            <th>DOB</th>
-            <th>Status</th>
-            <th>Hospital</th>
-            <th>Type</th>
-            <th>Pharm Team</th>
-            <th>Nurse Team</th>
-            <th>Interpreter</th>
-            <th>Blincyto Start Date</th>
-            <th>PIPS Start Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {patients.map(p => (
-            <tr key={p.id}>
-              <td>
-                <button
-                  onClick={() => handleEdit(p)}
-                  style={{ background: 'none', border: 'none', color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}
-                >
-                  {p.name}
-                </button>
-              </td>
-              <td>{p.mrn}</td>
-              <td>{p.dob}</td>
-              <td>
-                <select
-                  value={p.status}
-                  onChange={(e) => handleStatusChange(p, e.target.value)}
-                >
-                  <option value="Active">Active</option>
-                  <option value="Pending">Pending</option>
-                  <option value="On Hold">On Hold</option>
-                  <option value="Discharged">Discharged</option>
-                </select>
-              </td>
-              <td>{p.hospital}</td>
-              <td>{p.type}</td>
-              <td>{p.pharmTeam}</td>
-              <td>{p.nurseTeam}</td>
-              <td>{p.interpreter}</td>
-              <td>{p.hospStartDate}</td>
-              <td>{p.ourStartDate}</td>
-            </tr>
-          ))}
-        </tbody>
+<thead>
+  <tr>
+    <th>Name</th>
+    <th>MRN</th>
+    <th>DOB</th>
+    <th>Status</th>
+    <th>Hospital</th>
+    <th>Type</th>
+    <th>Pharm Team</th>
+    <th>Nurse Team</th>
+    <th>Interpreter</th>
+    <th>Blincyto Start Date</th>
+    <th>PIPS Start Date</th>
+    <th>Disconnect Date</th> {/* ✅ New column */}
+  </tr>
+</thead>
+ <tbody>
+  {patients.map(p => (
+    <tr key={p.id}>
+      <td>
+        <button
+          onClick={() => handleEdit(p)}
+          style={{ background: 'none', border: 'none', color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}
+        >
+          {p.name}
+        </button>
+      </td>
+      <td>{p.mrn}</td>
+      <td>{p.dob}</td>
+      <td>
+        <select
+          value={p.status}
+          onChange={(e) => handleStatusChange(p, e.target.value)}
+        >
+          <option value="Active">Active</option>
+          <option value="Pending">Pending</option>
+          <option value="On Hold">On Hold</option>
+          <option value="Discharged">Discharged</option>
+        </select>
+      </td>
+      <td>{p.hospital}</td>
+      <td>{p.type}</td>
+      <td>{p.pharmTeam}</td>
+      <td>{p.nurseTeam}</td>
+      <td>{p.interpreter}</td>
+      <td>{p.hospStartDate}</td>
+      <td>{p.ourStartDate}</td>
+      <td>{getDisconnectDate(p.ourStartDate, p.daysInCycle)}</td>
+    </tr>
+  ))}
+</tbody>
       </table>
 
       {showModal && (
