@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 
 import BagSchedule from './BagSchedule';
 import PatientList from './PatientList';
 import InactivePatients from './InactivePatients';
 import AddPatient from './AddPatient';
 import PrintSchedule from './PrintSchedule';
+import AllPatients from './AllPatients';
 
 import './BagSchedule.css';
 
@@ -34,18 +35,17 @@ function App() {
         boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-<img
-  src={`${process.env.PUBLIC_URL}/providencelogo.png`}
-  alt="Providence Logo"
-  style={{ height: '40px', marginRight: '15px' }}
-/>
-
+          <img
+            src={`${process.env.PUBLIC_URL}/providencelogo.png`}
+            alt="Providence Logo"
+            style={{ height: '40px', marginRight: '15px' }}
+          />
           <h1 style={{ margin: 0, lineHeight: 1.3, fontSize: '16px' }}>
             Providence Infusion and Pharmacy Services<br />
             Blincyto Tracking Tool
           </h1>
         </div>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <button className="rounded-button" onClick={() => setView('bagSchedule')} style={{ marginRight: 10 }}>
             Bag Change Schedule
           </button>
@@ -55,9 +55,12 @@ function App() {
           <button className="rounded-button" onClick={() => setView('inactive')} style={{ marginRight: 10 }}>
             Inactive/On Hold Patients
           </button>
-          <button className="rounded-button" onClick={() => setShowAddModal(true)}>
+          <button className="rounded-button" onClick={() => setShowAddModal(true)} style={{ marginRight: 10 }}>
             Add Patient
           </button>
+          <Link to="/all-patients" className="rounded-button" style={{ marginRight: 0 }}>
+            View All Patients
+          </Link>
         </div>
       </nav>
 
@@ -102,6 +105,7 @@ function App() {
       <Routes>
         <Route path="/" element={<MainLayout />} />
         <Route path="/print-schedule/:id" element={<PrintSchedule />} />
+        <Route path="/all-patients" element={<AllPatients />} />
       </Routes>
     </BrowserRouter>
   );
