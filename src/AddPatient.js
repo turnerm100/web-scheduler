@@ -235,11 +235,27 @@ const handleChange = (e) => {
 {renderSelect('Labs managed by', 'labsManagedBy', ['Providence Infusion', 'Hospital/Clinic', 'Not ordered'])}
 
 
-{renderSelect(
-  'RN Visit Day',
-  'nursingVisitDay',
-  ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'RN visits will coincide with bag change days.'],
-  formData.centralLineCareBy !== 'Providence Infusion' // 🔒 disable if not Providence
+{formData.bagChangeBy === 'Providence Infusion' ? (
+  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+    <label style={{ width: '250px' }}><strong>PIPS RN Visit Day:</strong></label>
+    <span style={{ color: '#333', fontStyle: 'italic' }}>
+      RN visits will be arranged based on the Blincyto bag change schedule.
+    </span>
+  </div>
+) : formData.centralLineCareBy === 'Hospital/Clinic' && formData.labsManagedBy === 'Hospital/Clinic' ? (
+  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+    <label style={{ width: '250px' }}><strong>PIPS RN Visit Day:</strong></label>
+    <span style={{ color: '#333', fontStyle: 'italic' }}>
+      Only PRN RN visits will be scheduled for Drsg/labs.
+    </span>
+  </div>
+) : (
+  renderSelect(
+    'PIPS RN Visit Day',
+    'nursingVisitDay',
+    ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    !(formData.centralLineCareBy === 'Providence Infusion' || formData.labsManagedBy === 'Providence Infusion')
+  )
 )}
 
           {renderField('Blincyto Start Date', 'hospStartDate', 'date')}

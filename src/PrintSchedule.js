@@ -4,6 +4,104 @@ import { useParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
+function getNurseVisitStatement(bagChangeBy, centralLineCareBy, labsManagedBy, nursingVisitDay) {
+  const key = `${bagChangeBy === 'Providence Infusion' ? 'PI' : 'CG'},${centralLineCareBy === 'Providence Infusion' ? 'PI' : 'H/C'},${labsManagedBy === 'Providence Infusion' ? 'PI' : labsManagedBy === 'Not ordered' ? 'N/O' : 'H/C'}`;
+
+  const statements = {
+    'PI,PI,PI': `Providence Infusion will be managing all Blincyto bag changes, central line care, and lab draws.
+An RN will schedule visits to see you based on your bag change schedule and MD-ordered lab draw dates.
+Please contact Providence Infusion with any questions or concerns.`,
+
+    'PI,PI,H/C': `Providence Infusion will be managing your Blincyto bag changes and central line care.
+An RN will schedule visits to see you based on your bag change schedule.
+You will have your labs drawn at your hospital/clinic, with visits arranged by your doctor’s care team.
+Please contact Providence Infusion with any questions or concerns.`,
+
+    'PI,PI,N/O': `Providence Infusion will be managing your Blincyto bag changes and central line care.
+An RN will schedule visits to see you based on your bag change schedule.
+Currently, there are no orders for lab draws. If this changes, your doctor’s care team or Providence Infusion will notify you of any future visits needed.
+Please contact Providence Infusion with any questions or concerns.`,
+
+    'PI,H/C,PI': `Providence Infusion will be managing your Blincyto bag changes and lab draws.
+An RN will schedule visits to see you based on your bag change schedule.
+Your central line care will be managed at your hospital/clinic, with visit days arranged by your doctor’s care team.
+Please contact Providence Infusion with any questions or concerns.`,
+
+    'PI,H/C,H/C': `Providence Infusion will be managing your Blincyto bag changes.
+An RN will schedule visits to see you based on your bag change schedule.
+Your central line care and lab draws will be managed at your hospital/clinic. These visits will be arranged by your doctor’s care team.
+Please contact Providence Infusion with any questions or concerns.`,
+
+    'PI,H/C,N/O': `Providence Infusion will be managing your Blincyto bag changes.
+An RN will schedule visits to see you based on your bag change schedule.
+Your central line care will be managed at your hospital/clinic, with visits arranged by your doctor’s care team.
+Currently, there are no orders for lab draws. Providence Infusion or your doctor’s care team will notify you if this changes.
+Please contact Providence Infusion with any questions or concerns.`,
+
+    'CG,PI,PI': [
+      `You or your caregiver will be managing your Blincyto bag changes. You have been provided with instructions on how to manage this process.
+Providence Infusion will be managing your central line care and lab draws.
+An RN will see you on `,
+      ` each week and will contact you the day before to confirm your visit time.
+Please contact Providence Infusion with any questions or concerns.`
+    ],
+
+    'CG,PI,H/C': [
+      `You or your caregiver will be managing your Blincyto bag changes. You have been provided with instructions on how to manage this process.
+Providence Infusion will be managing your central line care.
+An RN will see you on `,
+      ` each week and will contact you the day before to confirm your visit time.
+Your labs will be drawn at your hospital/clinic, with visits arranged by your doctor’s care team.
+Please contact Providence Infusion with any questions or concerns.`
+    ],
+
+    'CG,PI,N/O': [
+      `You or your caregiver will be managing your Blincyto bag changes. You have been provided with instructions on how to manage this process.
+Providence Infusion will be managing your central line care.
+An RN will see you on `,
+      ` each week and will contact you the day before to confirm your visit time.
+Currently, there are no orders for lab draws. Providence Infusion or your doctor’s care team will notify you if this changes.
+Please contact Providence Infusion with any questions or concerns.`
+    ],
+
+    'CG,H/C,PI': [
+      `You or your caregiver will be managing your Blincyto bag changes. You have been provided with instructions on how to manage this process.
+Your central line care will be managed at your hospital/clinic, with visits arranged by your doctor’s care team.
+Providence Infusion will be managing your lab draws.
+An RN will see you on `,
+      ` each week and will contact you the day before to confirm your visit time.
+Please contact Providence Infusion with any questions or concerns.`
+    ],
+
+    'CG,H/C,H/C': `You or your caregiver will be managing your Blincyto bag changes. You have been provided with instructions on how to manage this process.
+Your central line care and lab draws will be managed at your hospital/clinic. These visits will be arranged by your doctor’s care team.
+Please contact Providence Infusion with any questions or concerns.`,
+
+    'CG,H/C,N/O': [
+      `You or your caregiver will be managing your Blincyto bag changes. You have been provided with instructions on how to manage this process.
+Your central line care will be managed at your hospital/clinic, with visits arranged by your doctor’s care team.
+Currently, there are no orders for lab draws. Providence Infusion or your doctor’s care team will notify you if this changes.
+An RN will see you on `,
+      ` each week and will contact you the day before to confirm your visit time.
+Please contact Providence Infusion with any questions or concerns.`
+    ]
+  };
+
+  const statement = statements[key];
+
+  if (Array.isArray(statement)) {
+    return (
+      <span>
+        {statement[0]}
+        <strong>{nursingVisitDay || '[insert RN Visit Day]'}</strong>
+        {statement[1]}
+      </span>
+    );
+  }
+
+  return statement;
+}
+
 export default function PrintSchedule() {
   const { id } = useParams();
   const [patient, setPatient] = useState(null);
@@ -281,25 +379,17 @@ schedule.forEach((bag, i) => {
       <div><strong>Final Disconnect:</strong> {disconnectDateKey || '[not calculated]'}</div>
     </div>
 
-    <div style={{ fontSize: '14px', marginBottom: '40px' }}>
-      <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
-      <p>
-  {patient?.bagChangeBy?.toLowerCase?.() === 'providence infusion' && (
-    <>All bag changes, central line care and lab draws (if ordered) will be managed by a Providence Infusion Registered Nurse. If you have any questions or concerns, please contact Providence Infusion and Pharmacy Services.</>
-  )}
-
-  {patient?.bagChangeBy?.toLowerCase?.() === 'pt/cg' &&
-    patient?.nursingVisitPlan?.toLowerCase?.().includes('rn to do lab') && (
-      <>You or your caregiver have been taught to manage your own bag changes. A Providence RN will still visit weekly for central line care and labs. The tentative RN visit day is: <strong>{patient.nursingVisitDay || '[not provided]'}</strong>. If you have any questions or concerns, please contact Providence Infusion and Pharmacy Services.</>
-  )}
-
-  {patient?.bagChangeBy?.toLowerCase?.() === 'pt/cg' &&
-    patient?.nursingVisitPlan?.toLowerCase?.().includes('lab/drsg done at hospital') && (
-      <>You or a family member/caregiver will be managing your own bag changes. Central line care and labs will be managed at your hospital clinic or provider’s office. These visits should have already been arranged. A RN visit may be required for certain bag change situations. If there are any changes to your bag change schedule, a member of the Providence Infusion and Pharmacy services care team will notify you. Please contact us if you have any questions or concerns.</>
-  )}
-</p>
-
-    </div>
+ <div style={{ fontSize: '14px', marginBottom: '40px' }}>
+  <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
+  <p style={{ whiteSpace: 'pre-wrap' }}>
+    {getNurseVisitStatement(
+      patient.bagChangeBy,
+      patient.centralLineCareBy,
+      patient.labsManagedBy,
+      patient.nursingVisitDay
+    )}
+  </p>
+</div>
 
     {monthGrids}
 
