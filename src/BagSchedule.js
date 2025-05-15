@@ -235,18 +235,29 @@ export default function BagSchedule() {
     <div style={{ padding: 20 }}>
       <h2>Blincyto Bag Change Schedule</h2>
       <table border="1" cellPadding="8" style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ position: 'sticky', top: '50px', backgroundColor: '#f1f1f1', zIndex: 2 }}>
-            <th>Patient Name:</th>
-            <th style={{ maxWidth: '160px', width: '75px' }}>Blincyto Start Date:</th>
-            <th style={{ maxWidth: '160px', width: '75px' }}>PIPS Start Date:</th>
-            <th style={{ maxWidth: '160px', width: '40px' }}>Cycle Days:</th>
-            <th>Bag Info:</th>
-            <th>Disconnect Date:</th>
-            <th style={{ maxWidth: '160px', width: '100px' }}>Actions:</th>
-          </tr>
-        </thead>
-        <tbody>
+<thead>
+  <tr
+    style={{
+      position: 'sticky',
+      top: '50px',
+      backgroundColor: '#f1f1f1',
+      zIndex: 2,
+      borderTop: '3px solid #333',
+      borderBottom: '3px solid #333',
+      borderLeft: '3px solid #333',
+      borderRight: '3px solid #333'
+    }}
+  >
+    <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333' }}>Patient Name:</th>
+    <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '160px', width: '75px' }}>Blincyto Start Date:</th>
+    <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '160px', width: '75px' }}>PIPS Start Date:</th>
+    <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '160px', width: '75px' }}>Cycle Days:</th>
+    <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333' }}>Bag Info:</th>
+    <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333' }}>Disconnect Date:</th>
+    <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '160px', width: '100px' }}>Actions:</th>
+  </tr>
+</thead>
+<tbody>
 {displayPatients.map(patient => {
   const totalDays = parseInt(patient.daysInCycle, 10);
   const hospitalDate = parseLocalDate(patient.hospStartDate);
@@ -312,15 +323,21 @@ export default function BagSchedule() {
   }) || showDisconnectAlert) ? '#FFE5EC' : 'transparent';
 
   return (
-    <tr key={patient.id} style={{ backgroundColor: rowHighlight }}>
-                <td>
-                  <button
-                    className="rounded-link-button"
-                    onClick={() => setSelectedPatient(patient)}
-                  >
-                    {patient.name}
-                  </button>
-                </td>
+    <tr
+  key={patient.id}
+  style={{
+    backgroundColor: rowHighlight,
+    borderBottom: '3px solid #333' // ⬅️ Thicker and darker line
+  }}
+>
+                <td style={{ borderLeft: '3px solid #333' }}>
+  <button
+    className="rounded-link-button"
+    onClick={() => setSelectedPatient(patient)}
+  >
+    {patient.name}
+  </button>
+</td>
                 <td>{formatDate(hospitalDate)}</td>
                 <td>{formatDate(ourDate)}</td>
                 <td>{patient.daysInCycle}</td>
@@ -493,7 +510,7 @@ const showPtDoingBagsAlert = patient.bagChangeBy?.toString().toLowerCase() === '
   </div>
 </td>
 
-<td style={{ maxWidth: '240px', width: '200px' }}>
+<td style={{ maxWidth: '240px', width: '200px', borderRight: '3px solid #333' }}>
   <button
     className="rounded-button"
     style={{ marginBottom: '4px', width: '100%' }}
