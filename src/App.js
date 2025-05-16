@@ -1,3 +1,4 @@
+// src/App.js
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 
@@ -7,6 +8,11 @@ import InactivePatients from './InactivePatients';
 import AddPatient from './AddPatient';
 import PrintSchedule from './PrintSchedule';
 import AllPatients from './AllPatients';
+import Login from './Login';
+import PrivateRoute from './PrivateRoute';
+import AdminDashboard from './AdminDashboard'; // ✅ NEW
+
+import { getAuth, signOut } from 'firebase/auth';
 
 import './BagSchedule.css';
 
@@ -18,6 +24,16 @@ function App() {
     if (view === 'inactive') return <InactivePatients />;
     if (view === 'bagSchedule') return <BagSchedule />;
     return <PatientList />;
+  };
+
+  const handleLogout = async () => {
+    const auth = getAuth();
+    try {
+      await signOut(auth);
+      window.location.href = '/login';
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
 
   const MainLayout = () => (
@@ -58,9 +74,12 @@ function App() {
           <button className="rounded-button" onClick={() => setShowAddModal(true)} style={{ marginRight: 10 }}>
             Add Patient
           </button>
-          <Link to="/all-patients" className="rounded-button" style={{ marginRight: 0 }}>
+          <Link to="/all-patients" className="rounded-button" style={{ marginRight: 10 }}>
             View All Patients
           </Link>
+          <button className="rounded-button" onClick={handleLogout}>
+            Log Out
+          </button>
         </div>
       </nav>
 
@@ -103,9 +122,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<MainLayout />} />
-        <Route path="/print-schedule/:id" element={<PrintSchedule />} />
-        <Route path="/all-patients" element={<AllPatients />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<PrivateRoute><MainLayout /></PrivateRoute>} />
+        <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} /> {/* ✅ NEW */}
+        <Route path="/print-schedule/:id" element={<PrivateRoute><PrintSchedule /></PrivateRoute>} />
+        <Route path="/all-patients" element={<PrivateRoute><AllPatients /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   );

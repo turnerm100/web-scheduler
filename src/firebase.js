@@ -2,6 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDEW5KkV2aap_8U4Nlk5MdMUdNjkT-Gn2Y",
@@ -16,3 +17,4 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const functions = getFunctions(app, 'us-central1'); // ✅ Add region explicitly
