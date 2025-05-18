@@ -1,3 +1,4 @@
+//functions.index.js//
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const express = require("express");
@@ -88,4 +89,4 @@ app.post("/deleteUser", requireAdminManually, async (req, res) => {
 });
 
 // Export all routes via 1 Express function
-exports.api = functions.region("us-central1").https.onRequest(app);
+exports.api = functions.https.onRequest(app);
