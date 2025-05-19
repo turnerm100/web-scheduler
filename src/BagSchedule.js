@@ -20,12 +20,21 @@ export default function BagSchedule() {
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'patients'), snapshot => {
-      const data = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(patient => {
-          const status = (patient.status || '').toLowerCase();
-          return status !== 'discharged' && status !== 'on hold';
-        });
+const data = snapshot.docs
+  .map(doc => ({ id: doc.id, ...doc.data() }))
+  .filter(patient => {
+    const status = (patient.status || '').toLowerCase();
+    const hasSchedule =
+      patient.ourStartDate &&
+      patient.daysInCycle &&
+      patient.cycle;
+
+    return (
+      status !== 'discharged' &&
+      status !== 'on hold' &&
+      hasSchedule
+    );
+  });
 
       setSavedPatients(data);
 

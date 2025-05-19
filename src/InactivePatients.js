@@ -1,7 +1,13 @@
 // src/InactivePatients.js
 import React, { useEffect, useState } from 'react';
 import { db } from './firebase';
-import { collection, onSnapshot, deleteDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
+import {
+  collection,
+  onSnapshot,
+  deleteDoc,
+  doc,
+  updateDoc
+} from 'firebase/firestore';
 import AddPatient from './AddPatient';
 
 export default function InactivePatients() {
@@ -10,7 +16,7 @@ export default function InactivePatients() {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'inactivePatients'), (snapshot) => {
+    const unsub = onSnapshot(collection(db, 'patients'), (snapshot) => {
       const inactive = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(p => p.status === 'On Hold' || p.status === 'Discharged')
@@ -21,17 +27,8 @@ export default function InactivePatients() {
   }, []);
 
   const handleStatusChange = async (id, newStatus) => {
-  const patient = patients.find(p => p.id === id);
-  const updatedPatient = { ...patient, status: newStatus };
-
-  if (newStatus === 'Active' || newStatus === 'Pending') {
-    await setDoc(doc(db, 'patients', id), updatedPatient);
-    await deleteDoc(doc(db, 'inactivePatients', id));
-  } else {
-    await updateDoc(doc(db, 'inactivePatients', id), { status: newStatus });
-  }
-};
-
+    await updateDoc(doc(db, 'patients', id), { status: newStatus });
+  };
 
   const handleDelete = async (id) => {
     const confirm = window.confirm('Delete this patient permanently?');
@@ -54,6 +51,7 @@ export default function InactivePatients() {
   return (
     <div style={{ padding: 20 }}>
       <h2>Inactive Patients</h2>
+
       <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%' }}>
         <thead>
           <tr>
@@ -67,7 +65,16 @@ export default function InactivePatients() {
           {patients.map(p => (
             <tr key={p.id}>
               <td>
-                <button onClick={() => handleEdit(p)} style={{ background: 'none', border: 'none', color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}>
+                <button
+                  onClick={() => handleEdit(p)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'blue',
+                    textDecoration: 'underline',
+                    cursor: 'pointer'
+                  }}
+                >
                   {p.name}
                 </button>
               </td>
@@ -89,34 +96,34 @@ export default function InactivePatients() {
       </table>
 
       {showModal && (
-  <div style={{
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    background: 'rgba(0,0,0,0.5)',
-    overflowY: 'auto',
-    zIndex: 1000,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    paddingTop: '40px'
-  }}>
-    <div style={{
-      background: 'white',
-      padding: 20,
-      width: '90%',
-      maxWidth: 800,
-      borderRadius: '8px',
-      maxHeight: '90vh',
-      overflowY: 'auto',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-    }}>
-      <AddPatient key={selectedPatient?.id || 'edit'} editData={selectedPatient} onClose={handleCloseModal} />
-    </div>
-  </div>
-)}
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0,0,0,0.5)',
+          overflowY: 'auto',
+          zIndex: 1000,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          paddingTop: '40px'
+        }}>
+          <div style={{
+            background: 'white',
+            padding: 20,
+            width: '90%',
+            maxWidth: 800,
+            borderRadius: '8px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+          }}>
+            <AddPatient key={selectedPatient?.id || 'edit'} editData={selectedPatient} onClose={handleCloseModal} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
