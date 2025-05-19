@@ -10,6 +10,7 @@ const auth = getAuth();
 export default function AdminDashboard() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,26 +38,8 @@ export default function AdminDashboard() {
       }
     });
     return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const fetchUsers = async (user) => {
-    try {
-      const token = await user.getIdToken();
-      const response = await fetch(`${apiBase}/getUsers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ data: {} })
-      });
-      const res = await response.json();
-      setUsers(res.data?.users || []);
-    } catch (err) {
-      console.error('Error fetching users:', err);
-      setError('Failed to load user list.');
-    }
-  };
 
   const loadSettings = async () => {
     try {
@@ -87,6 +70,44 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchUsers = async (user) => {
+    try {
+      console.log('[fetchUsers] Fetching user list...');
+
+      const token = await user.getIdToken();
+      const response = await fetch(`${apiBase}/getUsers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ data: {} })
+      });
+
+      const res = await response.json();
+      console.log('[fetchUsers] API response:', res);
+
+      const authUsers = res?.data?.users || [];
+
+      const mergedUsers = await Promise.all(
+        authUsers.map(async (u) => {
+          const docRef = doc(db, 'users', u.uid);
+          const docSnap = await getDoc(docRef);
+          if (!docSnap.exists()) {
+            console.warn(`⚠️ No Firestore user doc found for UID: ${u.uid}`);
+          }
+          const isAdmin = docSnap.exists() ? docSnap.data().isAdmin || false : false;
+          return { ...u, isAdmin };
+        })
+      );
+
+      setUsers(mergedUsers);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setError('Failed to load user list.');
+    }
+  };
+
   const handleCreateUser = async () => {
     setResult('');
     setError('');
@@ -94,6 +115,13 @@ export default function AdminDashboard() {
 
     if (!email || !password) {
       setError('Please enter both email and password.');
+      setLoading(false);
+      return;
+    }
+
+    const emailExists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
+    if (emailExists) {
+      setError('A user with this email already exists.');
       setLoading(false);
       return;
     }
@@ -108,11 +136,20 @@ export default function AdminDashboard() {
         },
         body: JSON.stringify({ data: { email, password } })
       });
+
       const res = await response.json();
-      if (res.data?.email) {
+
+      if (res.data?.uid && res.data?.email) {
+        await setDoc(doc(db, 'users', res.data.uid), {
+          email: res.data.email,
+          isAdmin: isAdmin,
+          createdAt: new Date()
+        });
+
         setResult(`✅ User created: ${res.data.email}`);
         setEmail('');
         setPassword('');
+        setIsAdmin(false);
         fetchUsers(currentUser);
       } else {
         setError(res.error || 'Error creating user.');
@@ -125,12 +162,37 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
+  const handleToggleAdmin = async (uid, email, currentValue) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to ${currentValue ? 'revoke' : 'grant'} admin privileges for "${email}"?`
+    );
+    if (!confirmed) return;
+
+    try {
+      const userRef = doc(db, 'users', uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          email: email,
+          isAdmin: !currentValue,
+          createdAt: new Date()
+        });
+      } else {
+        await setDoc(userRef, {
+          isAdmin: !currentValue
+        }, { merge: true });
+      }
+      alert(`✅ Admin privileges ${!currentValue ? 'granted' : 'revoked'} for "${email}".`);
+      fetchUsers(currentUser);
+    } catch (err) {
+      console.error(err);
+      alert(`❌ Failed to update admin status for "${email}".`);
+    }
+  };
+
   const handleToggleStatus = async (uid, disabled, email) => {
     const action = disabled ? 'reactivate' : 'deactivate';
-    const confirmed = window.confirm(
-      `⚠️ Are you sure you want to ${action} the user "${email}"?`
-    );
-
+    const confirmed = window.confirm(`⚠️ Are you sure you want to ${action} the user "${email}"?`);
     if (!confirmed) return;
 
     try {
@@ -145,7 +207,6 @@ export default function AdminDashboard() {
       });
 
       const res = await response.json();
-
       if (res.data?.success) {
         alert(`✅ User "${email}" has been ${action}d.`);
         fetchUsers(currentUser);
@@ -256,6 +317,15 @@ export default function AdminDashboard() {
           onChange={(e) => setPassword(e.target.value)}
           style={{ width: '100%', marginBottom: 10 }}
         />
+        <label style={{ display: 'block', marginBottom: 10 }}>
+  <input
+    type="checkbox"
+    checked={isAdmin}
+    onChange={() => setIsAdmin(prev => !prev)}
+    style={{ marginRight: 6 }}
+  />
+  Give admin privileges
+</label>
         <button onClick={handleCreateUser} disabled={loading}>
           {loading ? 'Creating...' : 'Create Account'}
         </button>
@@ -270,35 +340,43 @@ export default function AdminDashboard() {
           <p>No users found.</p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ textAlign: 'left' }}>
-                <th>Email</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map(user => (
-                <tr key={user.uid}>
-                  <td>{user.email}</td>
-                  <td>{user.disabled ? 'Inactive' : 'Active'}</td>
-                  <td>
-                    <button
-                      onClick={() => handleToggleStatus(user.uid, user.disabled, user.email)}
-                      style={{ marginRight: 5 }}
-                    >
-                      {user.disabled ? 'Activate' : 'Deactivate'}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteUser(user.uid, user.email)}
-                      style={{ marginLeft: 5, color: 'red' }}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+<thead>
+  <tr style={{ textAlign: 'left' }}>
+    <th>Email</th>
+    <th>Status</th>
+    <th>Admin Privileges</th>
+    <th>Actions</th>
+  </tr>
+</thead>
+<tbody>
+  {users.map(user => (
+    <tr key={user.uid}>
+      <td>{user.email}</td>
+      <td>{user.disabled ? 'Inactive' : 'Active'}</td>
+      <td>
+        <input
+          type="checkbox"
+          checked={user.isAdmin || false}
+          onChange={() => handleToggleAdmin(user.uid, user.email, user.isAdmin)}
+        />
+      </td>
+      <td>
+        <button
+          onClick={() => handleToggleStatus(user.uid, user.disabled, user.email)}
+          style={{ marginRight: 5 }}
+        >
+          {user.disabled ? 'Activate' : 'Deactivate'}
+        </button>
+        <button
+          onClick={() => handleDeleteUser(user.uid, user.email)}
+          style={{ marginLeft: 5, color: 'red' }}
+        >
+          Delete
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
           </table>
         )}
       </div>
