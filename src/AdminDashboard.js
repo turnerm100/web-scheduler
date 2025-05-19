@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from './firebase';
 
 const auth = getAuth();
 
@@ -13,6 +15,10 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [enable5DayBags, setEnable5DayBags] = useState(false);
+  const [enable6DayBags, setEnable6DayBags] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(true);
 
   const projectRegion = 'us-central1';
   const projectId = 'blincyto-tracking-tool';
@@ -25,6 +31,7 @@ export default function AdminDashboard() {
       if (user) {
         setCurrentUser(user);
         fetchUsers(user);
+        loadSettings();
       } else {
         setError('You must be signed in to access the admin dashboard.');
       }
@@ -48,6 +55,35 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Error fetching users:', err);
       setError('Failed to load user list.');
+    }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const settingsRef = doc(db, 'settings', 'global');
+      const settingsSnap = await getDoc(settingsRef);
+      if (settingsSnap.exists()) {
+        const data = settingsSnap.data();
+        setEnable5DayBags(!!data.enable5DayBags);
+        setEnable6DayBags(!!data.enable6DayBags);
+      }
+    } catch (err) {
+      console.error('Error loading settings:', err);
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
+  const saveSettings = async () => {
+    try {
+      await setDoc(doc(db, 'settings', 'global'), {
+        enable5DayBags,
+        enable6DayBags
+      });
+      alert('✅ Settings saved.');
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      alert('❌ Failed to save settings.');
     }
   };
 
@@ -90,70 +126,69 @@ export default function AdminDashboard() {
   };
 
   const handleToggleStatus = async (uid, disabled, email) => {
-  const action = disabled ? 'reactivate' : 'deactivate';
-  const confirmed = window.confirm(
-    `⚠️ Are you sure you want to ${action} the user "${email}"?`
-  );
+    const action = disabled ? 'reactivate' : 'deactivate';
+    const confirmed = window.confirm(
+      `⚠️ Are you sure you want to ${action} the user "${email}"?`
+    );
 
-  if (!confirmed) return;
+    if (!confirmed) return;
 
-  try {
-    const token = await currentUser.getIdToken();
-    const response = await fetch(`${apiBase}/setUserStatus`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ data: { uid, disabled: !disabled } })
-    });
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`${apiBase}/setUserStatus`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ data: { uid, disabled: !disabled } })
+      });
 
-    const res = await response.json();
+      const res = await response.json();
 
-    if (res.data?.success) {
-      alert(`✅ User "${email}" has been ${action}d.`);
-      fetchUsers(currentUser);
-    } else {
-      alert(`❌ Failed to ${action} user: ${res.error}`);
+      if (res.data?.success) {
+        alert(`✅ User "${email}" has been ${action}d.`);
+        fetchUsers(currentUser);
+      } else {
+        alert(`❌ Failed to ${action} user: ${res.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while updating the user status.');
     }
-  } catch (err) {
-    console.error(err);
-    alert('An error occurred while updating the user status.');
-  }
-};
-
+  };
 
   const handleDeleteUser = async (uid, email) => {
-  const confirmed = window.confirm(
-    `⚠️ Are you sure you want to permanently delete the account for "${email}"?\n\nThis action cannot be undone.`
-  );
+    const confirmed = window.confirm(
+      `⚠️ Are you sure you want to permanently delete the account for "${email}"?\n\nThis action cannot be undone.`
+    );
 
-  if (!confirmed) return;
+    if (!confirmed) return;
 
-  try {
-    const token = await currentUser.getIdToken();
-    const response = await fetch(`${apiBase}/deleteUser`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ data: { uid } })
-    });
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`${apiBase}/deleteUser`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ data: { uid } })
+      });
 
-    const res = await response.json();
+      const res = await response.json();
 
-    if (res.data?.success) {
-      alert(`✅ User "${email}" deleted successfully.`);
-      fetchUsers(currentUser);
-    } else {
-      alert(`❌ Failed to delete user: ${res.error}`);
+      if (res.data?.success) {
+        alert(`✅ User "${email}" deleted successfully.`);
+        fetchUsers(currentUser);
+      } else {
+        alert(`❌ Failed to delete user: ${res.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while deleting the user.');
     }
-  } catch (err) {
-    console.error(err);
-    alert('An error occurred while deleting the user.');
-  }
-};
+  };
 
   const handleLogout = async () => {
     try {
@@ -170,6 +205,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
+      {/* Top Navigation */}
       <nav style={{
         position: 'sticky',
         top: 0,
@@ -194,22 +230,16 @@ export default function AdminDashboard() {
           </h1>
         </div>
         <div>
-          <button
-            className="rounded-button"
-            onClick={goToMainApp}
-            style={{ marginRight: 10 }}
-          >
+          <button className="rounded-button" onClick={goToMainApp} style={{ marginRight: 10 }}>
             Enter Blincyto Tool
           </button>
-          <button
-            className="rounded-button"
-            onClick={handleLogout}
-          >
+          <button className="rounded-button" onClick={handleLogout}>
             Log Out
           </button>
         </div>
       </nav>
 
+      {/* User Creation Section */}
       <div style={{ padding: 20, maxWidth: 600, margin: '0 auto' }}>
         <h2>👨‍⚕️ Create New User</h2>
         <input
@@ -233,6 +263,7 @@ export default function AdminDashboard() {
         {error && <p style={{ color: 'red' }}>{error}</p>}
       </div>
 
+      {/* Current Users Section */}
       <div style={{ padding: 20 }}>
         <h2>👥 Current Users</h2>
         {users.length === 0 ? (
@@ -247,28 +278,64 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-  {users.map(user => (
-    <tr key={user.uid}>
-      <td>{user.email}</td>
-      <td>{user.disabled ? 'Inactive' : 'Active'}</td>
-      <td>
-        <button
-          onClick={() => handleToggleStatus(user.uid, user.disabled, user.email)}
-          style={{ marginRight: 5 }}
-        >
-          {user.disabled ? 'Activate' : 'Deactivate'}
-        </button>
-        <button
-          onClick={() => handleDeleteUser(user.uid, user.email)}
-          style={{ marginLeft: 5, color: 'red' }}
-        >
-          Delete
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
+              {users.map(user => (
+                <tr key={user.uid}>
+                  <td>{user.email}</td>
+                  <td>{user.disabled ? 'Inactive' : 'Active'}</td>
+                  <td>
+                    <button
+                      onClick={() => handleToggleStatus(user.uid, user.disabled, user.email)}
+                      style={{ marginRight: 5 }}
+                    >
+                      {user.disabled ? 'Activate' : 'Deactivate'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(user.uid, user.email)}
+                      style={{ marginLeft: 5, color: 'red' }}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
           </table>
+        )}
+      </div>
+
+      {/* Settings Tab */}
+      <div style={{ padding: 20 }}>
+        <h2>
+          <button onClick={() => setShowSettings(!showSettings)}>
+            {showSettings ? '🔽 Hide Settings' : '⚙️ Show Settings'}
+          </button>
+        </h2>
+
+        {showSettings && !settingsLoading && (
+          <div style={{ border: '1px solid #ccc', padding: 20, maxWidth: 600 }}>
+            <h3>Blincyto Bag Duration Settings</h3>
+            <label>
+              <input
+                type="checkbox"
+                checked={enable5DayBags}
+                onChange={() => setEnable5DayBags(prev => !prev)}
+              />
+              Enable 5-Day Bag Duration
+            </label>
+            <br />
+            <label>
+              <input
+                type="checkbox"
+                checked={enable6DayBags}
+                onChange={() => setEnable6DayBags(prev => !prev)}
+              />
+              Enable 6-Day Bag Duration
+            </label>
+            <br />
+            <button onClick={saveSettings} style={{ marginTop: 10 }}>
+              💾 Save Settings
+            </button>
+          </div>
         )}
       </div>
     </div>
