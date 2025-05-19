@@ -331,12 +331,23 @@ export default function BagSchedule() {
   }}
 >
                 <td style={{ borderLeft: '3px solid #333' }}>
-  <button
-    className="rounded-link-button"
-    onClick={() => setSelectedPatient(patient)}
-  >
-    {patient.name}
-  </button>
+ <button
+  className="rounded-link-button"
+  onClick={() => setSelectedPatient(patient)}
+  style={{ padding: '4px', lineHeight: 1.2 }}
+>
+  {(() => {
+    const [last, first] = patient.name?.split(',').map(s => s.trim()) || [patient.name, ''];
+    return (
+      <div style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center' }}>
+        <div>{last},</div>
+        <div>{first}</div>
+      </div>
+    );
+  })()}
+</button>
+
+
 </td>
                 <td>{formatDate(hospitalDate)}</td>
                 <td>{formatDate(ourDate)}</td>
