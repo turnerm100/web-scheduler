@@ -74,9 +74,6 @@ export default function MainLayout() {
           <button className="rounded-button" onClick={() => setShowAddModal(true)} style={{ marginRight: 10 }}>
             Add Patient
           </button>
-          <Link to="/all-patients" className="rounded-button" style={{ marginRight: 10 }}>
-            View All Patients
-          </Link>
 
           <div style={{ position: 'relative' }}>
             <button className="rounded-button" onClick={() => setShowDropdown(prev => !prev)}>☰ Menu</button>
@@ -92,7 +89,6 @@ export default function MainLayout() {
                 zIndex: 999,
                 color: '#000'
               }}>
-                <li style={dropdownItem} onClick={() => navigate('/settings')}>User Settings</li>
                 <li style={dropdownItem} onClick={() => navigate('/admin-login')}>Admin Login</li>
                 <li style={dropdownItem} onClick={handleLogout}>Logout</li>
                 <li style={dropdownItem} onClick={() => alert('Coming soon!')}>Help / Support</li>

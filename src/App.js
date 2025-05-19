@@ -6,7 +6,6 @@ import PatientList from './PatientList';
 import InactivePatients from './InactivePatients';
 import AddPatient from './AddPatient';
 import PrintSchedule from './PrintSchedule';
-import AllPatients from './AllPatients';
 import Login from './Login';
 import PrivateRoute from './PrivateRoute';
 import AdminDashboard from './AdminDashboard';
@@ -23,7 +22,6 @@ function App() {
         <Route path="/" element={<PrivateRoute><MainLayout /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
         <Route path="/print-schedule/:id" element={<PrivateRoute><PrintSchedule /></PrivateRoute>} />
-        <Route path="/all-patients" element={<PrivateRoute><AllPatients /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   );
