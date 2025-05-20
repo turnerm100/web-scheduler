@@ -28,10 +28,20 @@ const data = snapshot.docs
   .map(doc => ({ id: doc.id, ...doc.data() }))
   .filter(patient => {
     const status = (patient.status || '').toLowerCase();
-    const hasSchedule =
+    const ourStart = new Date(patient.ourStartDate);
+    const hospStart = new Date(patient.hospStartDate);
+    const cycleDays = parseInt(patient.daysInCycle);
+    const hasSchedule = (
       patient.ourStartDate &&
-      patient.daysInCycle &&
-      patient.cycle;
+      patient.hospStartDate &&
+      !isNaN(cycleDays) &&
+      cycleDays > 0 &&
+      hospStart instanceof Date &&
+      ourStart instanceof Date &&
+      ourStart.toString() !== 'Invalid Date' &&
+      hospStart.toString() !== 'Invalid Date' &&
+      (cycleDays - Math.floor((ourStart - hospStart) / (1000 * 60 * 60 * 24))) > 0
+    );
 
     return (
       status !== 'discharged' &&
@@ -39,6 +49,7 @@ const data = snapshot.docs
       hasSchedule
     );
   });
+
 
       setSavedPatients(data);
 
