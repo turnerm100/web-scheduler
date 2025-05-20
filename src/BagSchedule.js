@@ -1,5 +1,5 @@
 // src/BagSchedule.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { db } from './firebase';
 import {
   collection,
@@ -12,6 +12,8 @@ import AddPatient from './AddPatient';
 import './BagSchedule.css';
 
 export default function BagSchedule() {
+    const [searchQuery, setSearchQuery] = useState('');
+  const rowRefs = useRef({});
   const [savedPatients, setSavedPatients] = useState([]);
   const [displayPatients, setDisplayPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -243,6 +245,49 @@ const data = snapshot.docs
   return (
     <div style={{ padding: 20 }}>
       <h2>Blincyto Bag Change Schedule</h2>
+        <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+    <input
+      type="text"
+      placeholder="Search by patient name..."
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      style={{
+        padding: '8px 12px',
+        width: '300px',
+        fontSize: '16px',
+        border: '1px solid #ccc',
+        borderRadius: '4px'
+      }}
+    />
+    <button
+      onClick={() => {
+        const query = searchQuery.toLowerCase();
+        const targetId = Object.keys(rowRefs.current).find(id => {
+          const name = savedPatients.find(p => p.id === id)?.name || '';
+          return name.toLowerCase().includes(query);
+        });
+
+        if (targetId && rowRefs.current[targetId]) {
+          rowRefs.current[targetId].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          alert('Patient not found.');
+        }
+      }}
+      style={{
+        marginLeft: '10px',
+        padding: '8px 16px',
+        fontSize: '16px',
+        backgroundColor: '#215C98',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: 'pointer'
+      }}
+    >
+      Search
+    </button>
+  </div>
+
       <table border="1" cellPadding="8" style={{ width: '100%', borderCollapse: 'collapse' }}>
 <thead>
   <tr
@@ -332,13 +377,15 @@ const data = snapshot.docs
   }) || showDisconnectAlert) ? '#FFE5EC' : 'transparent';
 
   return (
-    <tr
+<tr
   key={patient.id}
+  ref={(el) => (rowRefs.current[patient.id] = el)}
   style={{
     backgroundColor: rowHighlight,
-    borderBottom: '3px solid #333' // ⬅️ Thicker and darker line
+    borderBottom: '3px solid #333'
   }}
 >
+
                 <td style={{ borderLeft: '3px solid #333' }}>
  <button
   className="rounded-link-button"
