@@ -318,6 +318,15 @@ useEffect(() => {
         </div>
       </nav>
 
+<h2 style={{
+  fontSize: '22px',
+  fontWeight: 'bold',
+  margin: '20px 20px 10px 20px',
+  color: '#153D64'
+}}>
+  Admin Settings & New Users
+</h2>
+
 {/* User Management Section */}
 <div style={{ padding: 20 }}>
   <h2>
