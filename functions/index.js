@@ -5,12 +5,13 @@ const express = require("express");
 const cors = require("cors");
 
 admin.initializeApp();
+const db = admin.firestore();
+
 const app = express();
 app.use(cors({ origin: true }));
 
-const ADMIN_EMAIL = "turnerm100@hotmail.com";
-
-async function requireAdminManually(req, res, next) {
+// 🔐 Firestore-based admin check middleware
+async function requireAdminFromFirestore(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -20,9 +21,9 @@ async function requireAdminManually(req, res, next) {
     const idToken = authHeader.split("Bearer ")[1];
     const decoded = await admin.auth().verifyIdToken(idToken);
 
-    console.log("🔐 requireAdmin — decoded token:", decoded);
-    if (decoded.email !== ADMIN_EMAIL) {
-      return res.status(403).json({ error: "Forbidden: Not admin" });
+    const userDoc = await db.collection("users").doc(decoded.uid).get();
+    if (!userDoc.exists || userDoc.data().isAdmin !== true) {
+      return res.status(403).json({ error: "Forbidden: Not an admin user" });
     }
 
     req.adminEmail = decoded.email;
@@ -33,7 +34,8 @@ async function requireAdminManually(req, res, next) {
   }
 }
 
-app.post("/createUser", requireAdminManually, async (req, res) => {
+// 🧑‍💼 Admin-only route to create users
+app.post("/createUser", requireAdminFromFirestore, async (req, res) => {
   const { email, password } = req.body.data || {};
   try {
     const userRecord = await admin.auth().createUser({ email, password });
@@ -44,7 +46,8 @@ app.post("/createUser", requireAdminManually, async (req, res) => {
   }
 });
 
-app.post("/getUsers", requireAdminManually, async (req, res) => {
+// 📋 Admin-only route to list users
+app.post("/getUsers", requireAdminFromFirestore, async (req, res) => {
   const users = [];
   let nextPageToken;
 
@@ -66,7 +69,8 @@ app.post("/getUsers", requireAdminManually, async (req, res) => {
   }
 });
 
-app.post("/setUserStatus", requireAdminManually, async (req, res) => {
+// 🔄 Admin-only route to activate/deactivate users
+app.post("/setUserStatus", requireAdminFromFirestore, async (req, res) => {
   const { uid, disabled } = req.body.data || {};
   try {
     await admin.auth().updateUser(uid, { disabled });
@@ -77,7 +81,8 @@ app.post("/setUserStatus", requireAdminManually, async (req, res) => {
   }
 });
 
-app.post("/deleteUser", requireAdminManually, async (req, res) => {
+// ❌ Admin-only route to delete a user
+app.post("/deleteUser", requireAdminFromFirestore, async (req, res) => {
   const { uid } = req.body.data || {};
   try {
     await admin.auth().deleteUser(uid);
@@ -88,5 +93,5 @@ app.post("/deleteUser", requireAdminManually, async (req, res) => {
   }
 });
 
-// Export all routes via 1 Express function
+// 🚀 Export all routes via one Express function
 exports.api = functions.https.onRequest(app);
