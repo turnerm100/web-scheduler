@@ -345,15 +345,21 @@ const data = snapshot.docs
   onClick={() => setSelectedPatient(patient)}
   style={{ padding: '4px', lineHeight: 1.2 }}
 >
-  {(() => {
-    const [last, first] = patient.name?.split(',').map(s => s.trim()) || [patient.name, ''];
-    return (
-      <div style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center' }}>
-        <div>{last},</div>
-        <div>{first}</div>
-      </div>
-    );
-  })()}
+{(() => {
+  const [last, first] = patient.name?.split(',').map(s => s.trim()) || [patient.name, ''];
+  const dob = patient.dob ? `DOB: ${new Date(patient.dob).toLocaleDateString('en-US')}` : 'DOB: N/A';
+  const mrn = patient.mrn ? `MRN#: ${patient.mrn}` : 'MRN#: N/A';
+
+  return (
+    <div style={{ fontSize: '14px', textAlign: 'center' }}>
+      <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{last},</div>
+      <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{first}</div>
+      <div style={{ marginTop: '4px', fontSize: '12px', color: '#333' }}>{dob}</div>
+      <div style={{ fontSize: '12px', color: '#333' }}>{mrn}</div>
+    </div>
+  );
+})()}
+
 </button>
 
 
