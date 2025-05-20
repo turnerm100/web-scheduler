@@ -20,6 +20,7 @@ export default function AdminDashboard() {
   const [enable5DayBags, setEnable5DayBags] = useState(false);
   const [enable6DayBags, setEnable6DayBags] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
+  const [showUserManagement, setShowUserManagement] = useState(false);
 
   const projectRegion = 'us-central1';
   const projectId = 'blincyto-tracking-tool';
@@ -317,86 +318,96 @@ useEffect(() => {
         </div>
       </nav>
 
-      {/* User Creation Section */}
-      <div style={{ padding: 20, maxWidth: 600, margin: '0 auto' }}>
-        <h2>👨‍⚕️ Create New User</h2>
-        <input
-          type="email"
-          placeholder="New User Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ width: '100%', marginBottom: 10 }}
-        />
-        <input
-          type="password"
-          placeholder="New User Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ width: '100%', marginBottom: 10 }}
-        />
-        <label style={{ display: 'block', marginBottom: 10 }}>
-  <input
-    type="checkbox"
-    checked={isAdmin}
-    onChange={() => setIsAdmin(prev => !prev)}
-    style={{ marginRight: 6 }}
-  />
-  Give admin privileges
-</label>
-        <button onClick={handleCreateUser} disabled={loading}>
-          {loading ? 'Creating...' : 'Create Account'}
-        </button>
-        {result && <p style={{ color: 'green' }}>{result}</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-      </div>
+{/* User Management Section */}
+<div style={{ padding: 20 }}>
+  <h2>
+    <button onClick={() => setShowUserManagement(prev => !prev)}>
+      {showUserManagement ? '🔽 Hide User Management' : '👥 Show User Management'}
+    </button>
+  </h2>
 
-      {/* Current Users Section */}
-      <div style={{ padding: 20 }}>
-        <h2>👥 Current Users</h2>
-        {users.length === 0 ? (
-          <p>No users found.</p>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-<thead>
-  <tr style={{ textAlign: 'left' }}>
-    <th>Email</th>
-    <th>Status</th>
-    <th>Admin Privileges</th>
-    <th>Actions</th>
-  </tr>
-</thead>
-<tbody>
-  {users.map(user => (
-    <tr key={user.uid}>
-      <td>{user.email}</td>
-      <td>{user.disabled ? 'Inactive' : 'Active'}</td>
-      <td>
+  {showUserManagement && (
+    <div style={{ border: '1px solid #ccc', padding: 20, maxWidth: 800 }}>
+      {/* Create New User */}
+      <h3>➕ Create New User</h3>
+      <input
+        type="email"
+        placeholder="New User Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        style={{ width: '100%', marginBottom: 10 }}
+      />
+      <input
+        type="password"
+        placeholder="New User Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        style={{ width: '100%', marginBottom: 10 }}
+      />
+      <label style={{ display: 'block', marginBottom: 10 }}>
         <input
           type="checkbox"
-          checked={user.isAdmin || false}
-          onChange={() => handleToggleAdmin(user.uid, user.email, user.isAdmin)}
+          checked={isAdmin}
+          onChange={() => setIsAdmin(prev => !prev)}
+          style={{ marginRight: 6 }}
         />
-      </td>
-      <td>
-        <button
-          onClick={() => handleToggleStatus(user.uid, user.disabled, user.email)}
-          style={{ marginRight: 5 }}
-        >
-          {user.disabled ? 'Activate' : 'Deactivate'}
-        </button>
-        <button
-          onClick={() => handleDeleteUser(user.uid, user.email)}
-          style={{ marginLeft: 5, color: 'red' }}
-        >
-          Delete
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
-          </table>
-        )}
-      </div>
+        Give admin privileges
+      </label>
+      <button onClick={handleCreateUser} disabled={loading}>
+        {loading ? 'Creating...' : 'Create Account'}
+      </button>
+      {result && <p style={{ color: 'green' }}>{result}</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      {/* Current Users List */}
+      <h3 style={{ marginTop: 40 }}>📋 Current Users</h3>
+      {users.length === 0 ? (
+        <p>No users found.</p>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ textAlign: 'left' }}>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Admin Privileges</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map(user => (
+              <tr key={user.uid}>
+                <td>{user.email}</td>
+                <td>{user.disabled ? 'Inactive' : 'Active'}</td>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={user.isAdmin || false}
+                    onChange={() => handleToggleAdmin(user.uid, user.email, user.isAdmin)}
+                  />
+                </td>
+                <td>
+                  <button
+                    onClick={() => handleToggleStatus(user.uid, user.disabled, user.email)}
+                    style={{ marginRight: 5 }}
+                  >
+                    {user.disabled ? 'Activate' : 'Deactivate'}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteUser(user.uid, user.email)}
+                    style={{ marginLeft: 5, color: 'red' }}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )}
+</div>
+
 
       {/* Settings Tab */}
       <div style={{ padding: 20 }}>
