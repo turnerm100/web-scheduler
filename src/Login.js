@@ -8,6 +8,8 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from './firebase';
 
 export default function Login({ isAdminModeProp = false }) {
   const [email, setEmail] = useState('');
@@ -17,8 +19,6 @@ export default function Login({ isAdminModeProp = false }) {
   const [isAdminMode, setIsAdminMode] = useState(isAdminModeProp);
   const navigate = useNavigate();
   const auth = getAuth();
-
-  const ADMIN_EMAIL = 'turnerm100@hotmail.com';
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -47,10 +47,19 @@ export default function Login({ isAdminModeProp = false }) {
       await result.user.getIdToken(true);
 
       if (isAdminMode) {
-        if (email === ADMIN_EMAIL) {
-          navigate('/admin');
-        } else {
-          setError('Access denied. This is not an admin account.');
+        try {
+          const userRef = doc(db, 'users', result.user.uid);
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists() && userSnap.data().isAdmin === true) {
+            navigate('/admin');
+          } else {
+            setError('Access denied. This account is not an admin.');
+            await signOut(auth);
+          }
+        } catch (err) {
+          console.error('Error checking admin status:', err);
+          setError('Error verifying admin access.');
           await signOut(auth);
         }
       } else {

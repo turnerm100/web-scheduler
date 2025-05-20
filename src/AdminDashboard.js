@@ -27,19 +27,36 @@ export default function AdminDashboard() {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setCurrentUser(user);
-        fetchUsers(user);
-        loadSettings();
-      } else {
-        setError('You must be signed in to access the admin dashboard.');
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists() && userSnap.data().isAdmin === true) {
+          setCurrentUser(user);
+          setIsAdmin(true);
+          fetchUsers(user);
+          loadSettings();
+        } else {
+          setError('❌ You do not have permission to access the admin dashboard.');
+          navigate('/');
+        }
+      } catch (err) {
+        console.error('Error checking admin status:', err);
+        setError('Error verifying user access.');
+        navigate('/');
       }
-    });
-    return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    } else {
+      setError('You must be signed in to access the admin dashboard.');
+      navigate('/login');
+    }
+  });
+
+  return () => unsubscribe();
+}, [navigate]);
+
 
   const loadSettings = async () => {
     try {

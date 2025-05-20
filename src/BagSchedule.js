@@ -19,6 +19,8 @@ export default function BagSchedule() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [overrideEdits, setOverrideEdits] = useState({});
   const [bagTimeEdits, setBagTimeEdits] = useState({});
+  const [sortOption, setSortOption] = useState('');
+
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'patients'), snapshot => {
@@ -242,10 +244,73 @@ const data = snapshot.docs
     }
   };
 
+  const getLastBagDate = (patient) => {
+  const totalDays = parseInt(patient.daysInCycle, 10);
+  const hospitalDate = parseLocalDate(patient.hospStartDate);
+  const ourDate = parseLocalDate(patient.ourStartDate);
+  let daysPassed = Math.floor((ourDate - hospitalDate) / (1000 * 60 * 60 * 24));
+  daysPassed = daysPassed < 0 ? 0 : daysPassed;
+  const remainingDays = totalDays - daysPassed;
+
+  const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
+  const schedule = getBagDurations(remainingDays, overrides, patient.isPreservativeFree || false);
+
+  let current = new Date(ourDate);
+  schedule.forEach((days) => {
+    current.setDate(current.getDate() + days);
+  });
+  return current;
+};
+
   return (
     <div style={{ padding: 20 }}>
       <h2>Blincyto Bag Change Schedule</h2>
-        <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+<div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+    <label style={{ fontWeight: 'bold' }}>Sort by:</label>
+    <select
+      value={sortOption}
+      onChange={(e) => {
+        const option = e.target.value;
+        setSortOption(option);
+
+        const sorted = [...savedPatients].sort((a, b) => {
+          if (option === 'name') {
+            return (a.name || '').localeCompare(b.name || '');
+          } else if (option === 'blincytoStart') {
+            return parseLocalDate(a.hospStartDate) - parseLocalDate(b.hospStartDate);
+          } else if (option === 'pipsStart') {
+            return parseLocalDate(a.ourStartDate) - parseLocalDate(b.ourStartDate);
+          } else if (option === 'cycleDays') {
+            return (parseInt(a.daysInCycle) || 0) - (parseInt(b.daysInCycle) || 0);
+          } else if (option === 'disconnectDate') {
+            const aLast = getLastBagDate(a);
+            const bLast = getLastBagDate(b);
+            return aLast - bLast;
+          }
+          return 0;
+        });
+
+        setDisplayPatients(sorted);
+      }}
+      style={{
+        padding: '8px 12px',
+        fontSize: '16px',
+        border: '1px solid #ccc',
+        borderRadius: '4px',
+        minWidth: '220px'
+      }}
+    >
+      <option value="">-- Select --</option>
+      <option value="name">Patient Name (A–Z)</option>
+      <option value="blincytoStart">Blincyto Start Date</option>
+      <option value="pipsStart">PIPS Start Date</option>
+      <option value="cycleDays">Cycle Days</option>
+      <option value="disconnectDate">Disconnect Date</option>
+    </select>
+  </div>
+
+  <div style={{ display: 'flex' }}>
     <input
       type="text"
       placeholder="Search by patient name..."
@@ -287,6 +352,8 @@ const data = snapshot.docs
       Search
     </button>
   </div>
+</div>
+
 
       <table border="1" cellPadding="8" style={{ width: '100%', borderCollapse: 'collapse' }}>
 <thead>

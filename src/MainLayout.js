@@ -75,26 +75,30 @@ export default function MainLayout() {
             Add Patient
           </button>
 
-          <div style={{ position: 'relative' }}>
-            <button className="rounded-button" onClick={() => setShowDropdown(prev => !prev)}>☰ Menu</button>
-            {showDropdown && (
-              <ul style={{
-                position: 'absolute',
-                right: 0,
-                backgroundColor: 'white',
-                listStyle: 'none',
-                padding: '10px',
-                margin: 0,
-                boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-                zIndex: 999,
-                color: '#000'
-              }}>
-                <li style={dropdownItem} onClick={() => navigate('/admin-login')}>Admin Login</li>
-                <li style={dropdownItem} onClick={handleLogout}>Logout</li>
-                <li style={dropdownItem} onClick={() => alert('Coming soon!')}>Help / Support</li>
-              </ul>
-            )}
-          </div>
+<div
+  style={{ position: 'relative' }}
+  onMouseEnter={() => setShowDropdown(true)}
+  onMouseLeave={() => setShowDropdown(false)}
+>
+  <button className="rounded-button">☰ Menu</button>
+  {showDropdown && (
+    <ul style={{
+      position: 'absolute',
+      right: 0,
+      backgroundColor: 'white',
+      listStyle: 'none',
+      padding: '10px',
+      margin: 0,
+      boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+      zIndex: 999,
+      color: '#000'
+    }}>
+      <li style={dropdownItem} onClick={() => navigate('/admin-login')}>Admin Login</li>
+      <li style={dropdownItem} onClick={handleLogout}>Logout</li>
+      <li style={dropdownItem} onClick={() => alert('Coming soon!')}>Help / Support</li>
+    </ul>
+  )}
+</div>
         </div>
       </nav>
 
