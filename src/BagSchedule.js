@@ -261,7 +261,7 @@ const data = snapshot.docs
     <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '160px', width: '75px' }}>Blincyto Start Date:</th>
     <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '160px', width: '75px' }}>PIPS Start Date:</th>
     <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '160px', width: '75px' }}>Cycle Days:</th>
-    <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333' }}>Bag Info:</th>
+    <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333' }}>Blincyto Bag Info:</th>
     <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333' }}>Disconnect Date:</th>
     <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '160px', width: '100px' }}>Actions:</th>
   </tr>
