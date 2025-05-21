@@ -74,14 +74,50 @@ const data = snapshot.docs
     return () => unsub();
   }, []);
 
-  const refreshSavedPatients = async () => {
-    const snapshot = await getDocs(collection(db, 'patients'));
-    const updatedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+const refreshSavedPatients = async () => {
+  const snapshot = await getDocs(collection(db, 'patients'));
+  const updatedData = snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(patient => {
+      const status = (patient.status || '').toLowerCase();
+      const ourStart = new Date(patient.ourStartDate);
+      const hospStart = new Date(patient.hospStartDate);
+      const cycleDays = parseInt(patient.daysInCycle);
+      const hasSchedule = (
+        patient.ourStartDate &&
+        patient.hospStartDate &&
+        !isNaN(cycleDays) &&
+        cycleDays > 0 &&
+        hospStart.toString() !== 'Invalid Date' &&
+        ourStart.toString() !== 'Invalid Date' &&
+        (cycleDays - Math.floor((ourStart - hospStart) / (1000 * 60 * 60 * 24))) > 0
+      );
 
-    setSavedPatients(updatedData);
-    setDisplayPatients(updatedData);
-  };
+      return (
+        status !== 'discharged' &&
+        status !== 'on hold' &&
+        hasSchedule
+      );
+    });
 
+  const overrides = {};
+  const times = {};
+  updatedData.forEach(patient => {
+    if (patient.bagOverrides) overrides[patient.id] = patient.bagOverrides;
+
+    if (patient.bagTimes?.bags) {
+      times[patient.id] = {
+        ...Object.fromEntries(patient.bagTimes.bags.map((t, i) => [i, t])),
+        disconnect: patient.bagTimes.disconnect ?? ''
+      };
+    }
+  });
+
+  setSavedPatients(updatedData);
+  setOverrideEdits(overrides);
+  setBagTimeEdits(times);
+  setDisplayPatients(updatedData);
+};
   
   const handleOverrideChange = (patientId, index, value) => {
     setOverrideEdits(prev => ({
