@@ -1,5 +1,5 @@
 // src/BagSchedule.js
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { db } from './firebase';
 import {
   collection,
@@ -82,6 +82,7 @@ const data = snapshot.docs
     setDisplayPatients(updatedData);
   };
 
+  
   const handleOverrideChange = (patientId, index, value) => {
     setOverrideEdits(prev => ({
       ...prev,
@@ -166,27 +167,52 @@ const data = snapshot.docs
   };
 
   const shouldHighlightRow = (bagData, patient) => {
-  const today = new Date().toDateString();
+  const todayStr = new Date().toDateString();
+
+  const isDisconnectToday = (() => {
+    const lastBag = bagData[bagData.length - 1];
+    return lastBag?.endDateObj?.toDateString() === todayStr;
+  })();
+
+  const isDisconnectTomorrow = (() => {
+    const lastBag = bagData[bagData.length - 1];
+    return lastBag && isTomorrow(lastBag.endDateObj);
+  })();
+
+  const showDisconnectAlert = isDisconnectToday || isDisconnectTomorrow;
+
+  const showPtDoingBagsAlert = patient.bagChangeBy?.toString().toLowerCase() === 'pt/cg';
+
   for (let i = 0; i < bagData.length; i++) {
     const bag = bagData[i];
     const prevBag = i > 0 ? bagData[i - 1] : null;
-    const isToday = bag.startDateObj.toDateString() === today;
+    const isToday = bag.startDateObj.toDateString() === todayStr;
     const isTomorrowBag = isTomorrow(bag.startDateObj);
-    const showPtDoingBagsAlert = patient.bagChangeBy?.toString().toLowerCase() === 'pt/cg';
+
+    const isFirstBagToday = i === 0 && isToday;
+    const isPumpReprogram = isTodayAndDifferentFromPrevious(bag, prevBag);
 
     if (
       (i > 0 && bag.durationDays < prevBag?.durationDays && isTomorrowBag) ||
       (i > 0 && bag.durationDays < prevBag?.durationDays && isToday) ||
-      (i === 0 && isToday) ||
-      (i > 0 && isTodayAndDifferentFromPrevious(bag, prevBag)) ||
+      isFirstBagToday ||
+      isPumpReprogram ||
       (i === 0 && isTomorrowBag && !showPtDoingBagsAlert) ||
-      (isTomorrowBag && !showPtDoingBagsAlert)
+      (isTomorrowBag && !showPtDoingBagsAlert) ||
+      (isToday && !showPtDoingBagsAlert)
     ) {
       return true;
     }
   }
+
+  // ✅ ADD THIS TO CATCH DISCONNECT COLUMN HIGHLIGHTS
+  if (showDisconnectAlert) {
+    return true;
+  }
+
   return false;
 };
+
 
   const getBagDurations = (daysLeft, overrides = [], isPreservativeFree = false) => {
     const bags = [];
@@ -285,22 +311,59 @@ const data = snapshot.docs
         const option = e.target.value;
         setSortOption(option);
 
-        const sorted = [...savedPatients].sort((a, b) => {
-          if (option === 'name') {
-            return (a.name || '').localeCompare(b.name || '');
-          } else if (option === 'blincytoStart') {
-            return parseLocalDate(a.hospStartDate) - parseLocalDate(b.hospStartDate);
-          } else if (option === 'pipsStart') {
-            return parseLocalDate(a.ourStartDate) - parseLocalDate(b.ourStartDate);
-          } else if (option === 'cycleDays') {
-            return (parseInt(a.daysInCycle) || 0) - (parseInt(b.daysInCycle) || 0);
-          } else if (option === 'disconnectDate') {
-            const aLast = getLastBagDate(a);
-            const bLast = getLastBagDate(b);
-            return aLast - bLast;
-          }
-          return 0;
+const sorted = [...savedPatients].sort((a, b) => {
+  if (option === 'name') {
+    return (a.name || '').localeCompare(b.name || '');
+  } else if (option === 'blincytoStart') {
+    return parseLocalDate(a.hospStartDate) - parseLocalDate(b.hospStartDate);
+  } else if (option === 'pipsStart') {
+    return parseLocalDate(a.ourStartDate) - parseLocalDate(b.ourStartDate);
+  } else if (option === 'cycleDays') {
+    return (parseInt(a.daysInCycle) || 0) - (parseInt(b.daysInCycle) || 0);
+  } else if (option === 'disconnectDate') {
+    const aLast = getLastBagDate(a);
+    const bLast = getLastBagDate(b);
+    return aLast - bLast;
+  } else if (option === 'pinkHighlight') {
+    const getBagDataForPatient = (patient) => {
+      const totalDays = parseInt(patient.daysInCycle, 10);
+      const hospitalDate = parseLocalDate(patient.hospStartDate);
+      const ourDate = parseLocalDate(patient.ourStartDate);
+      let daysPassed = Math.floor((ourDate - hospitalDate) / (1000 * 60 * 60 * 24));
+      daysPassed = daysPassed < 0 ? 0 : daysPassed;
+      const remaining = totalDays - daysPassed;
+      const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
+      const schedule = getBagDurations(remaining, overrides, patient.isPreservativeFree || false);
+
+      const bagData = [];
+      let current = new Date(ourDate);
+      schedule.forEach((days) => {
+        const start = new Date(current);
+        const end = new Date(start);
+        end.setDate(start.getDate() + days);
+        bagData.push({
+          durationDays: days,
+          startDateObj: start,
+          endDateObj: end
         });
+        current = new Date(end);
+      });
+
+      return bagData;
+    };
+
+    const aBags = getBagDataForPatient(a);
+    const bBags = getBagDataForPatient(b);
+
+    const aIsPink = shouldHighlightRow(aBags, a);
+    const bIsPink = shouldHighlightRow(bBags, b);
+
+    return (bIsPink ? 1 : 0) - (aIsPink ? 1 : 0);
+  }
+
+  return 0;
+});
+
 
         setDisplayPatients(sorted);
       }}
@@ -313,11 +376,12 @@ const data = snapshot.docs
       }}
     >
       <option value="">-- Select --</option>
+      <option value="pinkHighlight">Task Alerts</option>
       <option value="name">Patient Name (A–Z)</option>
       <option value="blincytoStart">Blincyto Start Date</option>
       <option value="pipsStart">PIPS Start Date</option>
       <option value="cycleDays">Cycle Days</option>
-      <option value="disconnectDate">Disconnect Date</option>
+      <option value="disconnectDate">Disconnect Date</option>      
     </select>
   </div>
 
