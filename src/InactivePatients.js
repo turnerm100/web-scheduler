@@ -15,20 +15,27 @@ export default function InactivePatients() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'patients'), (snapshot) => {
-      const inactive = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(p => p.status === 'On Hold' || p.status === 'Discharged')
-        .sort((a, b) => a.name.localeCompare(b.name));
-      setPatients(inactive);
-    });
-    return () => unsub();
-  }, []);
+useEffect(() => {
+  const unsub = onSnapshot(collection(db, 'patients'), (snapshot) => {
+    const inactive = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(p => p.status === 'On Hold' || p.status === 'Discharged')
+      .sort((a, b) => a.name.localeCompare(b.name));
+    setPatients(inactive);
+  });
+  return () => unsub();
+}, []);
 
-  const handleStatusChange = async (id, newStatus) => {
-    await updateDoc(doc(db, 'patients', id), { status: newStatus });
-  };
+const handleStatusChange = async (patient, newStatus) => {
+  if (!patient || !patient.id) return;
+  if (newStatus === patient.status) return;
+
+  await updateDoc(doc(db, 'patients', patient.id), { status: newStatus });
+
+  if (newStatus === 'Active' || newStatus === 'Pending') {
+    alert('Patient will now be visible on the Active Patients page.');
+  }
+};
 
   const handleDelete = async (id) => {
     const confirm = window.confirm('Delete this patient permanently?');
@@ -79,7 +86,7 @@ export default function InactivePatients() {
                 </button>
               </td>
               <td>
-                <select value={p.status} onChange={(e) => handleStatusChange(p.id, e.target.value)}>
+                <select value={p.status} onChange={(e) => handleStatusChange(p, e.target.value)}>
                   <option>On Hold</option>
                   <option>Discharged</option>
                   <option>Active</option>

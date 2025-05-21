@@ -30,26 +30,17 @@ export default function PatientList() {
     setSelectedPatient(null);
   };
 
-  const handleStatusChange = async (patient, newStatus) => {
-    if (newStatus === patient.status) return;
+const handleStatusChange = async (patient, newStatus) => {
+  if (newStatus === patient.status) return;
 
-    const confirmed = window.confirm(
-      'Would you like to change the status of this patient?\n\nIf you move to On Hold or Discharged, they will no longer be visible on the Active Patient List.'
-    );
+  const confirmed = window.confirm(
+    'Would you like to change the status of this patient?\n\nIf you move to On Hold or Discharged status, patient will now appear on the Inactive Patient page.'
+  );
 
-    if (!confirmed) return;
+  if (!confirmed) return;
 
-    const updatedPatient = { ...patient, status: newStatus };
-
-    if (newStatus === 'On Hold' || newStatus === 'Discharged') {
-      // Move to inactivePatients collection
-      await setDoc(doc(db, 'inactivePatients', patient.id), updatedPatient);
-      await deleteDoc(doc(db, 'patients', patient.id));
-    } else {
-      // Stay in active list and just update status
-      await updateDoc(doc(db, 'patients', patient.id), { status: newStatus });
-    }
-  };
+  await updateDoc(doc(db, 'patients', patient.id), { status: newStatus });
+};
 
   const getDisconnectDate = (startDateStr, days) => {
   if (!startDateStr || !days) return '';

@@ -564,31 +564,39 @@ const sorted = [...savedPatients].sort((a, b) => {
   }}
 >
 
-                <td style={{ borderLeft: '3px solid #333' }}>
- <button
-  className="rounded-link-button"
-  onClick={() => setSelectedPatient(patient)}
-  style={{ padding: '4px', lineHeight: 1.2 }}
->
-{(() => {
-  const [last, first] = patient.name?.split(',').map(s => s.trim()) || [patient.name, ''];
-  const dob = patient.dob ? `DOB: ${new Date(patient.dob).toLocaleDateString('en-US')}` : 'DOB: N/A';
-  const mrn = patient.mrn ? `MRN#: ${patient.mrn}` : 'MRN#: N/A';
+ <td style={{ borderLeft: '3px solid #333' }}>
+  <button
+    className="rounded-link-button"
+    onClick={() => setSelectedPatient(patient)}
+    style={{ padding: '4px', lineHeight: 1.2 }}
+  >
+    {(() => {
+      const [last, first] = patient.name?.split(',').map(s => s.trim()) || [patient.name, ''];
+      const dob = patient.dob ? `DOB: ${new Date(patient.dob).toLocaleDateString('en-US')}` : 'DOB: N/A';
+      const mrn = patient.mrn ? `MRN#: ${patient.mrn}` : 'MRN#: N/A';
 
-  return (
-    <div style={{ fontSize: '14px', textAlign: 'center' }}>
-      <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{last},</div>
-      <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{first}</div>
-      <div style={{ marginTop: '4px', fontSize: '12px', color: '#333' }}>{dob}</div>
-      <div style={{ fontSize: '12px', color: '#333' }}>{mrn}</div>
-    </div>
-  );
-})()}
-
-</button>
-
-
+      return (
+        <div style={{ fontSize: '14px', textAlign: 'center' }}>
+          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{last},</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{first}</div>
+          <div style={{ marginTop: '4px', fontSize: '12px', color: '#333' }}>{dob}</div>
+          <div style={{ fontSize: '12px', color: '#333' }}>{mrn}</div>
+          {patient.pharmTeam && (
+            <div style={{ fontSize: '12px', color: '#333' }}>
+              Pharm Team: {patient.pharmTeam}
+            </div>
+          )}
+          {patient.nurseTeam && (
+            <div style={{ fontSize: '12px', color: '#333' }}>
+              RN Team: {patient.nurseTeam}
+            </div>
+          )}
+        </div>
+      );
+    })()}
+  </button>
 </td>
+
                 <td>{formatDate(hospitalDate)}</td>
                 <td>{formatDate(ourDate)}</td>
                 <td>{patient.daysInCycle}</td>
