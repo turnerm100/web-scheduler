@@ -180,33 +180,42 @@ useEffect(() => {
     setLoading(false);
   };
 
-  const handleToggleAdmin = async (uid, email, currentValue) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to ${currentValue ? 'revoke' : 'grant'} admin privileges for "${email}"?`
-    );
-    if (!confirmed) return;
-
-    try {
-      const userRef = doc(db, 'users', uid);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) {
-        await setDoc(userRef, {
-          email: email,
-          isAdmin: !currentValue,
-          createdAt: new Date()
-        });
-      } else {
-        await setDoc(userRef, {
-          isAdmin: !currentValue
-        }, { merge: true });
-      }
-      alert(`✅ Admin privileges ${!currentValue ? 'granted' : 'revoked'} for "${email}".`);
-      fetchUsers(currentUser);
-    } catch (err) {
-      console.error(err);
-      alert(`❌ Failed to update admin status for "${email}".`);
+const handleToggleAdmin = async (uid, email, currentValue) => {
+  // If revoking admin, ensure it's not the last admin
+  if (currentValue) {
+    const currentAdmins = users.filter(u => u.isAdmin && u.uid !== uid);
+    if (currentAdmins.length === 0) {
+      alert(`❌ You cannot remove admin privileges from "${email}" because they are the last admin.`);
+      return;
     }
-  };
+  }
+
+  const confirmed = window.confirm(
+    `Are you sure you want to ${currentValue ? 'revoke' : 'grant'} admin privileges for "${email}"?`
+  );
+  if (!confirmed) return;
+
+  try {
+    const userRef = doc(db, 'users', uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+      await setDoc(userRef, {
+        email: email,
+        isAdmin: !currentValue,
+        createdAt: new Date()
+      });
+    } else {
+      await setDoc(userRef, {
+        isAdmin: !currentValue
+      }, { merge: true });
+    }
+    alert(`✅ Admin privileges ${!currentValue ? 'granted' : 'revoked'} for "${email}".`);
+    fetchUsers(currentUser);
+  } catch (err) {
+    console.error(err);
+    alert(`❌ Failed to update admin status for "${email}".`);
+  }
+};
 
   const handleToggleStatus = async (uid, disabled, email) => {
     const action = disabled ? 'reactivate' : 'deactivate';
