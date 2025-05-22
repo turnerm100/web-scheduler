@@ -34,7 +34,7 @@ const handleStatusChange = async (patient, newStatus) => {
   if (newStatus === patient.status) return;
 
   const confirmed = window.confirm(
-    'Would you like to change the status of this patient?\n\nChanging a patients status to On Hold or Discharged will move their profile to the Inactive Patients page.'
+    'Would you like to change the status of this patient?\n\nChanging a patients status to On Hold or Discharged will move their profile to the Inactive Patients page. Their Blincyto cycle, if current, will no longer be viewable.'
   );
 
   if (!confirmed) return;

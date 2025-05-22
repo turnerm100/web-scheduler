@@ -2,7 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://turnerm100.github.io/web-scheduler",
+  "homepage": ".",
   "dependencies": {
     "@testing-library/react": "^14.0.0",
     "ajv": "^8.12.0",

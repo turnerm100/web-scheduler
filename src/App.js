@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 
 import BagSchedule from './BagSchedule';
 import PatientList from './PatientList';
@@ -15,7 +15,7 @@ import './BagSchedule.css';
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/admin-login" element={<Login isAdminModeProp={true} />} />
@@ -23,7 +23,7 @@ function App() {
         <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
         <Route path="/print-schedule/:id" element={<PrivateRoute><PrintSchedule /></PrivateRoute>} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
