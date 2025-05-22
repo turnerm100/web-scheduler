@@ -95,7 +95,6 @@ export default function MainLayout() {
     }}>
       <li style={dropdownItem} onClick={() => navigate('/admin-login')}>Admin Login</li>
       <li style={dropdownItem} onClick={handleLogout}>Logout</li>
-      <li style={dropdownItem} onClick={() => alert('Coming soon!')}>Help / Support</li>
     </ul>
   )}
 </div>
