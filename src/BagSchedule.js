@@ -167,7 +167,7 @@ const refreshSavedPatients = async () => {
     try {
       await updateDoc(doc(db, 'patients', patientId), { bagOverrides, bagTimes });
       await refreshSavedPatients();
-      window.open(`/print-schedule/${patientId}`, '_blank');
+      window.location.href = `#/print-schedule/${patientId}`;
     } catch (error) {
       console.error('Failed to save before printing:', error);
       alert('Could not save changes before printing. Please try again.');
