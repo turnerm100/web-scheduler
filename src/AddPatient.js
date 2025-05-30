@@ -280,7 +280,23 @@ const handleChange = (e) => {
     style={{ width: '400px', height: '80px' }}
   />
 </div>
-          <div style={{ marginTop: '16px' }}>
+ {/* Bottom Buttons Row */}
+<div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+  {/* Left: Save Button */}
+  <button
+    type="submit"
+    style={{
+      backgroundColor: '#153D64',
+      color: 'white',
+      border: 'none',
+      borderRadius: '4px',
+      padding: '8px 16px'
+    }}
+  >
+    Save Patient
+  </button>
+
+  {/* Right: Reset Button */}
   <button
     type="button"
     onClick={() => {
@@ -313,6 +329,7 @@ const handleChange = (e) => {
     Reset Cycle Info
   </button>
 </div>
+
 
         </>
       )}
