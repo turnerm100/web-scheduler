@@ -225,41 +225,49 @@ export default function PrintSchedule() {
               key={index}
               style={{
                 marginTop: '5px',
-                background:
-                  item.type === 'final-disconnect' ? '#d4edda' :
-                  item.type === 'bag' && item.isReprogram ? '#d4edda' :
-                  item.type === 'bag' ? '#eaf3fb' : 'transparent',
-                border: item.type === 'final-disconnect' ? '1px solid #155724' :
-                        item.type === 'bag' && item.isReprogram ? '1px solid #155724' :
-                        item.type === 'bag' ? '1px solid #153D64' : 'none',
+background:
+  item.type === 'final-disconnect' ? '#f8d7da' :   // RED background (Bootstrap danger background)
+  item.type === 'bag' && item.isReprogram ? '#d4edda' :
+  item.type === 'bag' ? '#eaf3fb' : 'transparent',
+border: item.type === 'final-disconnect' ? '1px solid #721c24' :  // RED border (Bootstrap danger border)
+        item.type === 'bag' && item.isReprogram ? '1px solid #155724' :
+        item.type === 'bag' ? '1px solid #153D64' : 'none',
                 borderRadius: '6px',
                 padding: '5px',
                 fontSize: '12px'
               }}
             >
               {item.type === 'final-disconnect' && (
-                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#155724' }}>
-                  Final Disconnect – Blincyto Cycle Complete. A nurse will be doing your final disconnect.
-                </div>
+<div style={{ fontSize: '11px', fontWeight: 'bold', color: '#721c24' }}>
+  Final Disconnect – Your blincyto Cycle will be completed on this date. A nurse will be doing your final disconnect. You should receive a call the day before to schedule the appropriate time for this visit.
+</div>
               )}
-              {item.type === 'bag' && (
-                <>
-                  <strong>{item.label}</strong><br />
-                  Duration: {item.duration} day(s)<br />
-                  Volume: {item.volume}<br />
-                  Rate: {item.rate}<br />
-                  {item.isReprogram && (
-                    <div style={{ color: 'green', fontWeight: 'bold', marginTop: '4px' }}>
-                      Pump reprogram needed
-                    </div>
-                  )}
-                  {item.requiresRNVisit && (
-                    <div style={{ color: '#c0392b', fontWeight: 'bold', marginTop: '4px' }}>
-                      RN visit required for this bag change and pump reprogram.
-                    </div>
-                  )}
-                </>
-              )}
+{item.type === 'bag' && (
+  <>
+    <strong>{item.label}</strong><br />
+    Duration: {item.duration} day(s)<br />
+    {patient.bagChangeBy === "Providence Infusion" ? (
+      <span style={{ color: '#215C98', fontWeight: 600 }}>
+        A nurse will make a visit to do the bag change.<br />
+        You will receive a call the day before to schedule your visit time.
+      </span>
+    ) : (
+      <span style={{ color: '#215C98', fontWeight: 600 }}>
+        Bag change is due on this date.
+      </span>
+    )}
+    {item.isReprogram && (
+      <div style={{ color: 'green', fontWeight: 'bold', marginTop: '4px' }}>
+        Pump reprogram needed
+      </div>
+    )}
+    {item.requiresRNVisit && (
+      <div style={{ color: '#c0392b', fontWeight: 'bold', marginTop: '4px' }}>
+        RN visit required for this bag change and pump reprogram.
+      </div>
+    )}
+  </>
+)}
             </div>
           ))}
         </td>
@@ -345,7 +353,7 @@ schedule.forEach((bag, i) => {
     currentMonth.setMonth(currentMonth.getMonth() + 1);
   }
 
- return (
+return (
   <div style={{ padding: '40px', fontFamily: 'Arial' }}>
     <button
       onClick={() => window.print()}
@@ -364,9 +372,37 @@ schedule.forEach((bag, i) => {
       Print Schedule
     </button>
 
-    <h1 style={{ textAlign: 'center', marginBottom: '10px' }}>Blincyto Calendar</h1>
-    <h2 style={{ textAlign: 'center', marginTop: '0' }}>{patient.name}</h2>
+    {/* PATIENT NAME, DOB, TITLE */}
+    <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+      <h1 style={{
+        fontSize: '2.3rem',
+        fontWeight: 700,
+        margin: 0,
+        color: '#153D64',
+        letterSpacing: '0.02em'
+      }}>
+        {patient.name}
+      </h1>
+      {patient.dob && (
+        <div style={{
+          fontSize: '1.1rem',
+          color: '#444',
+          margin: '5px 0 0 0'
+        }}>
+          DOB: {patient.dob}
+        </div>
+      )}
+      <h2 style={{
+        margin: '15px 0 0 0',
+        fontWeight: 600,
+        color: '#153D64',
+        fontSize: '1.5rem'
+      }}>
+        Blincyto Calendar
+      </h2>
+    </div>
 
+    {/* SUMMARY BAR */}
     <div style={{
       display: 'flex',
       justifyContent: 'center',
@@ -379,31 +415,30 @@ schedule.forEach((bag, i) => {
       <div><strong>Final Disconnect:</strong> {disconnectDateKey || '[not calculated]'}</div>
     </div>
 
- <div style={{ fontSize: '14px', marginBottom: '40px' }}>
-  <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
-  <p style={{ whiteSpace: 'pre-wrap' }}>
-    {getNurseVisitStatement(
-      patient.bagChangeBy,
-      patient.centralLineCareBy,
-      patient.labsManagedBy,
-      patient.nursingVisitDay
-    )}
-  </p>
-</div>
+    {/* NURSING VISIT INFO */}
+    <div style={{ fontSize: '14px', marginBottom: '40px' }}>
+      <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
+      <p style={{ whiteSpace: 'pre-wrap' }}>
+        {getNurseVisitStatement(
+          patient.bagChangeBy,
+          patient.centralLineCareBy,
+          patient.labsManagedBy,
+          patient.nursingVisitDay
+        )}
+      </p>
+    </div>
 
+    {/* CALENDAR GRIDS */}
     {monthGrids}
 
+    {/* PRINT STYLES */}
     <style>{`
       @media print {
-        @page {
-          size: landscape;
-        }
+        @page { size: landscape; }
         * { visibility: visible !important; }
         button, nav, .no-print { display: none !important; }
         body { background: white; }
-        td, tr, table, div, h1, h2, h3, p {
-          page-break-inside: avoid;
-        }
+        td, tr, table, div, h1, h2, h3, p { page-break-inside: avoid; }
       }
     `}</style>
   </div>
