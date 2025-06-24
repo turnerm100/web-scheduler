@@ -308,7 +308,7 @@ const handleToggleAdmin = async (uid, email, currentValue) => {
       }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <img
-            src={`${process.env.PUBLIC_URL}/providencelogo.png`}
+            src={`${process.env.PUBLIC_URL}/ProvidenceLogo.png`}
             alt="Providence Logo"
             style={{ height: '40px', marginRight: '15px' }}
           />

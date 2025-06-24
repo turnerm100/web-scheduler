@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
+import { useAuth } from './AuthProvider'; // <-- NEW
 
 function getNurseVisitStatement(bagChangeBy, centralLineCareBy, labsManagedBy, nursingVisitDay) {
   const key = `${bagChangeBy === 'Providence Infusion' ? 'PI' : 'CG'},${centralLineCareBy === 'Providence Infusion' ? 'PI' : 'H/C'},${labsManagedBy === 'Providence Infusion' ? 'PI' : labsManagedBy === 'Not ordered' ? 'N/O' : 'H/C'}`;
@@ -105,8 +106,11 @@ Please contact Providence Infusion with any questions or concerns.`
 export default function PrintSchedule() {
   const { id } = useParams();
   const [patient, setPatient] = useState(null);
+  const { user, authLoading } = useAuth(); // <-- NEW
 
   useEffect(() => {
+    if (authLoading || !user) return; // <-- ADD THIS GUARD
+
     const fetchPatient = async () => {
       const docRef = doc(db, 'patients', id);
       const docSnap = await getDoc(docRef);
@@ -118,7 +122,11 @@ export default function PrintSchedule() {
       }
     };
     fetchPatient();
-  }, [id]);
+  }, [authLoading, user, id]); // <-- ADD authLoading and user to the array
+
+  if (authLoading) return <div style={{ padding: '40px' }}>Loading...</div>;
+  if (!user) return <div style={{ padding: '40px' }}>Please sign in to view schedule.</div>;
+  if (!patient) return <div style={{ padding: '40px' }}>Loading...</div>;
 
   const parseDate = (str) => {
     if (!str) return null;
@@ -304,8 +312,6 @@ border: item.type === 'final-disconnect' ? '1px solid #721c24' :  // RED border 
       </div>
     );
   };
-
-  if (!patient) return <div style={{ padding: '40px' }}>Loading...</div>;
 
   const schedule = generateSchedule();
 

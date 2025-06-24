@@ -1,15 +1,18 @@
-//src.PatientList.js//
 import React, { useEffect, useState } from 'react';
 import { db } from './firebase';
 import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import AddPatient from './AddPatient';
+import { useAuth } from './AuthProvider'; // <-- NEW
 
 export default function PatientList() {
+  const { user, authLoading } = useAuth(); // <-- NEW
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
+    if (authLoading || !user) return; // <-- NEW
+
     const unsub = onSnapshot(collection(db, 'patients'), (snapshot) => {
       const active = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
@@ -18,7 +21,10 @@ export default function PatientList() {
       setPatients(active);
     });
     return () => unsub();
-  }, []);
+  }, [authLoading, user]); // <-- NEW
+
+  if (authLoading) return <div>Loading...</div>; // <-- NEW
+  if (!user) return <div>Please sign in to view patients.</div>; // <-- NEW
 
   const handleEdit = (patient) => {
     setSelectedPatient(patient);
