@@ -10,20 +10,23 @@ import Login from './Login';
 import PrivateRoute from './PrivateRoute';
 import AdminDashboard from './AdminDashboard';
 import MainLayout from './MainLayout'; // ✅ New
+import { BagSettingsProvider } from './contexts/BagSettingsContext';
 
 import './BagSchedule.css';
 
 function App() {
   return (
-    <HashRouter>
-      <Routes>
+    <BagSettingsProvider>
+      <HashRouter>
+        <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/admin-login" element={<Login isAdminModeProp={true} />} />
         <Route path="/" element={<PrivateRoute><MainLayout /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
         <Route path="/print-schedule/:id" element={<PrivateRoute><PrintSchedule /></PrivateRoute>} />
       </Routes>
-    </HashRouter>
+      </HashRouter>
+    </BagSettingsProvider>
   );
 }
 

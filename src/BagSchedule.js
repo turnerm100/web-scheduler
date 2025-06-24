@@ -20,6 +20,7 @@ import {
   isTodayAndDifferentFromPrevious
 } from './utils/generateBagSchedule';
 import { shouldHighlightRow } from './utils/highlighting';
+import { useBagSettings } from './contexts/BagSettingsContext';
 
 export default function BagSchedule() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,7 +34,10 @@ export default function BagSchedule() {
   const [pharmTeamFilter, setPharmTeamFilter] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // --- Memoized unique pharmacy teams for filter dropdown ---
+  // Bag admin settings
+  const { enable5DayBags, enable6DayBags, loading: bagSettingsLoading } = useBagSettings();
+
+  // Memoized unique pharmacy teams for filter dropdown
   const pharmacyTeams = useMemo(() => {
     const teams = new Set();
     savedPatients.forEach(p => {
@@ -42,7 +46,7 @@ export default function BagSchedule() {
     return Array.from(teams).sort();
   }, [savedPatients]);
 
-  // --- Patient data subscription ---
+  // Patient data subscription
   useEffect(() => {
     setLoading(true);
     const unsub = onSnapshot(collection(db, 'patients'), snapshot => {
@@ -93,7 +97,7 @@ export default function BagSchedule() {
     return () => unsub();
   }, []);
 
-  // --- Manual refresh (used in save) ---
+  // Manual refresh (used in save)
   const refreshSavedPatients = async () => {
     setLoading(true);
     const snapshot = await getDocs(collection(db, 'patients'));
@@ -138,7 +142,7 @@ export default function BagSchedule() {
     setLoading(false);
   };
 
-  // --- Input handlers ---
+  // Input handlers
   const handleOverrideChange = (patientId, index, value) => {
     setOverrideEdits(prev => ({
       ...prev,
@@ -159,7 +163,7 @@ export default function BagSchedule() {
     }));
   };
 
-  // --- Save Logic with error handling ---
+  // Save Logic with error handling
   const handleSaveOverrides = async (patientId) => {
     try {
       const overrides = overrideEdits[patientId] || {};
@@ -196,26 +200,21 @@ export default function BagSchedule() {
     }
   };
 
-  // --- Combined Filter, Sort, and Search ---
+  // Combined Filter, Sort, and Search
   useEffect(() => {
     let filtered = savedPatients;
 
-    // 1. Apply Pharmacy Team filter
     if (pharmTeamFilter) {
       filtered = filtered.filter(
         p => (p.pharmTeam || '').toLowerCase() === pharmTeamFilter.toLowerCase()
       );
     }
-
-    // 2. Apply search filter (search by name)
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       filtered = filtered.filter(
         p => (p.name || '').toLowerCase().includes(q)
       );
     }
-
-    // 3. Apply sorting
     if (sortOption) {
       filtered = [...filtered].sort((a, b) => {
         if (sortOption === 'name') {
@@ -227,8 +226,8 @@ export default function BagSchedule() {
         } else if (sortOption === 'cycleDays') {
           return (parseInt(a.daysInCycle) || 0) - (parseInt(b.daysInCycle) || 0);
         } else if (sortOption === 'disconnectDate') {
-          const aLast = getLastBagDate(a, overrideEdits);
-          const bLast = getLastBagDate(b, overrideEdits);
+          const aLast = getLastBagDate(a, overrideEdits, enable5DayBags, enable6DayBags);
+          const bLast = getLastBagDate(b, overrideEdits, enable5DayBags, enable6DayBags);
           return aLast - bLast;
         } else if (sortOption === 'pinkHighlight') {
           const getBagDataForPatient = (patient) => {
@@ -239,7 +238,13 @@ export default function BagSchedule() {
             daysPassed = daysPassed < 0 ? 0 : daysPassed;
             const remaining = totalDays - daysPassed;
             const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
-            const schedule = getBagDurations(remaining, overrides, patient.isPreservativeFree || false);
+            const schedule = getBagDurations(
+              remaining,
+              overrides,
+              patient.isPreservativeFree || false,
+              enable5DayBags,
+              enable6DayBags
+            );
 
             const bagData = [];
             let current = new Date(ourDate);
@@ -271,9 +276,9 @@ export default function BagSchedule() {
     }
 
     setDisplayPatients(filtered);
-  }, [sortOption, pharmTeamFilter, searchQuery, savedPatients, overrideEdits]);
+  }, [sortOption, pharmTeamFilter, searchQuery, savedPatients, overrideEdits, enable5DayBags, enable6DayBags]);
 
-  // --- Spinner ---
+  // Spinner for patient loading
   if (loading) {
     return (
       <div style={{
@@ -285,17 +290,27 @@ export default function BagSchedule() {
     );
   }
 
-  // ===================
-  // Your entire JSX UI:
-  // ===================
+  // Spinner for bag settings loading
+  if (bagSettingsLoading) {
+    return (
+      <div style={{
+        width: '100%', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>
+        <div className="loader"></div>
+        <span style={{ marginLeft: '18px', fontSize: '18px' }}>Loading bag settings…</span>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: 20 }}>
       <h2>Blincyto Bag Change Schedule</h2>
+      <p style={{ color: "#555" }}>
+        (Bag options are based on current pharmacy protocol. 5-day and 6-day bags are only available if enabled by an admin.)
+      </p>
 
       {/* FILTERS: Sort, Pharmacy Team, Search */}
       <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
-        {/* Sort dropdown */}
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <label style={{ fontWeight: 'bold' }}>Sort by:</label>
           <select
@@ -318,8 +333,6 @@ export default function BagSchedule() {
             <option value="disconnectDate">Disconnect Date</option>
           </select>
         </div>
-
-        {/* Pharmacy Team filter */}
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <label style={{ fontWeight: 'bold' }}>Pharmacy Team:</label>
           <select
@@ -339,8 +352,6 @@ export default function BagSchedule() {
             ))}
           </select>
         </div>
-
-        {/* Search by patient name */}
         <div style={{ display: 'flex' }}>
           <input
             type="text"
@@ -420,7 +431,15 @@ export default function BagSchedule() {
 
             const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
             const times = bagTimeEdits[patient.id] || {};
-            const schedule = getBagDurations(remainingDays, overrides, patient.isPreservativeFree || false);
+
+            // --- CRITICAL: USE getBagDurations TO GENERATE SCHEDULE WITH OVERRIDES ---
+            const schedule = getBagDurations(
+              remainingDays,
+              overrides,
+              patient.isPreservativeFree || false,
+              enable5DayBags,
+              enable6DayBags
+            );
 
             const bagData = [];
             let current = new Date(ourDate);
@@ -473,6 +492,12 @@ export default function BagSchedule() {
                 (isToday && !showPtDoingBagsAlert)
               );
             }) || showDisconnectAlert) ? '#FFE5EC' : 'transparent';
+
+            // --- CRITICAL: ONLY INCLUDE 5/6 IN OVERRIDE OPTIONS IF ADMIN ENABLED ---
+            let allowedBagOptions = [1, 2, 3, 4, 7];
+            if (enable5DayBags) allowedBagOptions.splice(4, 0, 5); // after 4
+            if (enable6DayBags) allowedBagOptions.push(6);
+            allowedBagOptions = allowedBagOptions.sort((a, b) => a - b);
 
             return (
               <tr
@@ -533,7 +558,6 @@ export default function BagSchedule() {
                       let backgroundColor = 'transparent';
                       let bagAlert = null;
 
-                      // Priority-based highlight logic
                       if (isToday && !showPtDoingBagsAlert) {
                         backgroundColor = '#AFE19B';
                         bagAlert = "Bag change due today. Please confirm RN is schedule to see patient.";
@@ -579,6 +603,9 @@ export default function BagSchedule() {
                         bagAlert = "Pt/CG doing bag changes.";
                       }
 
+                      // --- CRITICAL: ONLY ALLOW 1-DAY FOR PRESERVATIVE-FREE ---
+                      const dropdownOptions = patient.isPreservativeFree ? [1] : allowedBagOptions;
+
                       return (
                         <div
                           key={i}
@@ -621,7 +648,7 @@ export default function BagSchedule() {
                               style={{ width: '100%', marginBottom: '10px' }}
                             >
                               <option value="">Auto</option>
-                              {(patient.isPreservativeFree ? [1] : [1, 2, 3, 4, 7]).map(day => (
+                              {dropdownOptions.map(day => (
                                 <option key={day} value={day}>{day} day</option>
                               ))}
                             </select>

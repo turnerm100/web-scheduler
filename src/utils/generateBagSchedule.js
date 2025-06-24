@@ -1,5 +1,3 @@
-// src/utils/generateBagSchedule.js
-
 export function parseLocalDate(dateString) {
   if (!dateString) return new Date();
   const [year, month, day] = dateString.split('-').map(Number);
@@ -28,7 +26,14 @@ export function isTodayAndDifferentFromPrevious(currentBag, prevBag) {
   );
 }
 
-export function getBagDurations(daysLeft, overrides = [], isPreservativeFree = false) {
+// ======= ONLY ONE DEFINITION OF getBagDurations =======
+export function getBagDurations(
+  daysLeft,
+  overrides = [],
+  isPreservativeFree = false,
+  enable5DayBags = false,
+  enable6DayBags = false
+) {
   const bags = [];
   let remaining = daysLeft;
 
@@ -56,26 +61,35 @@ export function getBagDurations(daysLeft, overrides = [], isPreservativeFree = f
   }
 
   for (let i = 0; i < 28 && remaining > 0; i++) {
+    // Only use override if present and valid
     const override = parseInt(overrides[i]);
     let duration;
-    if ([1, 2, 3, 4, 7].includes(override)) {
+
+    if ([1, 2, 3, 4, 5, 6, 7].includes(override)) {
       duration = override;
+    } else if (remaining === 5 && enable5DayBags) {
+      duration = 5;
+    } else if (remaining === 6 && enable6DayBags) {
+      duration = 6;
+    } else if (remaining <= 4) {
+      duration = remaining;
+    } else if (remaining % 7 === 0) {
+      duration = 7;
     } else {
-      if (remaining <= 4) duration = remaining;
-      else if (remaining === 5) duration = 2;
-      else if (remaining === 6) duration = 3;
-      else if (remaining % 7 === 0) duration = 7;
-      else {
-        const mod = remaining % 7;
-        duration = mod <= 4 ? mod : (mod === 5 ? 2 : 3);
-      }
+      // Default fallback for other cases (maintain your pattern)
+      const mod = remaining % 7;
+      duration = mod <= 4 ? mod : (mod === 5 ? (enable5DayBags ? 5 : 2) : (mod === 6 ? (enable6DayBags ? 6 : 3) : 3));
     }
+
     if (duration > remaining) duration = remaining;
     bags.push(duration);
     remaining -= duration;
   }
   return bags;
 }
+
+// Don't forget: you'll need to update all uses of getBagDurations elsewhere to pass
+// enable5DayBags and enable6DayBags!
 
 export function getBagDetails(duration) {
   switch (duration) {
@@ -88,7 +102,8 @@ export function getBagDetails(duration) {
   }
 }
 
-export function getLastBagDate(patient, overrideEdits = {}) {
+// If you use enable5DayBags/enable6DayBags in getLastBagDate, add them as args too
+export function getLastBagDate(patient, overrideEdits = {}, enable5DayBags = false, enable6DayBags = false) {
   const totalDays = parseInt(patient.daysInCycle, 10);
   const hospitalDate = parseLocalDate(patient.hospStartDate);
   const ourDate = parseLocalDate(patient.ourStartDate);
@@ -96,7 +111,13 @@ export function getLastBagDate(patient, overrideEdits = {}) {
   daysPassed = daysPassed < 0 ? 0 : daysPassed;
   const remainingDays = totalDays - daysPassed;
   const overrides = overrideEdits[patient.id] || patient.bagOverrides || [];
-  const schedule = getBagDurations(remainingDays, overrides, patient.isPreservativeFree || false);
+  const schedule = getBagDurations(
+    remainingDays,
+    overrides,
+    patient.isPreservativeFree || false,
+    enable5DayBags,
+    enable6DayBags
+  );
   let current = new Date(ourDate);
   schedule.forEach((days) => {
     current.setDate(current.getDate() + days);
