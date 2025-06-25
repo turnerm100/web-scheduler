@@ -1,22 +1,15 @@
 // src/MainLayout.js
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import AddPatient from './AddPatient';
 import BagSchedule from './BagSchedule';
 import PatientList from './PatientList';
 import InactivePatients from './InactivePatients';
 
 export default function MainLayout() {
-  const [view, setView] = useState('bagSchedule');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
-
-  const renderView = () => {
-    if (view === 'inactive') return <InactivePatients />;
-    if (view === 'bagSchedule') return <BagSchedule />;
-    return <PatientList />;
-  };
 
   const handleLogout = async () => {
     const { getAuth, signOut } = await import('firebase/auth');
@@ -62,13 +55,13 @@ export default function MainLayout() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <button className="rounded-button" onClick={() => setView('bagSchedule')} style={{ marginRight: 10 }}>
+          <button className="rounded-button" onClick={() => navigate('/bag-schedule')} style={{ marginRight: 10 }}>
             Bag Change Schedule
           </button>
-          <button className="rounded-button" onClick={() => setView('active')} style={{ marginRight: 10 }}>
+          <button className="rounded-button" onClick={() => navigate('/active')} style={{ marginRight: 10 }}>
             Active Patients
           </button>
-          <button className="rounded-button" onClick={() => setView('inactive')} style={{ marginRight: 10 }}>
+          <button className="rounded-button" onClick={() => navigate('/inactive')} style={{ marginRight: 10 }}>
             Inactive/On Hold Patients
           </button>
           <button className="rounded-button" onClick={() => setShowAddModal(true)} style={{ marginRight: 10 }}>
@@ -100,7 +93,15 @@ export default function MainLayout() {
         </div>
       </nav>
 
-      <div style={{ padding: 20 }}>{renderView()}</div>
+      <div style={{ padding: 20 }}>
+        <Routes>
+          {/* Default: redirect root to /bag-schedule */}
+          <Route path="/" element={<Navigate to="/bag-schedule" replace />} />
+          <Route path="/bag-schedule" element={<BagSchedule />} />
+          <Route path="/active" element={<PatientList />} />
+          <Route path="/inactive" element={<InactivePatients />} />
+        </Routes>
+      </div>
 
       {showAddModal && (
         <div style={{

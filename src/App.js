@@ -1,7 +1,4 @@
-// src/App.js
-import React from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
-
 import BagSchedule from './BagSchedule';
 import PatientList from './PatientList';
 import InactivePatients from './InactivePatients';
@@ -11,9 +8,6 @@ import Login from './Login';
 import PrivateRoute from './PrivateRoute';
 import AdminDashboard from './AdminDashboard';
 import MainLayout from './MainLayout';
-// REMOVE THIS LINE:
-// import ArchivedPatients from './components/ArchivedPatients';
-
 import { BagSettingsProvider } from './contexts/BagSettingsContext';
 import './BagSchedule.css';
 
@@ -24,10 +18,21 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/admin-login" element={<Login isAdminModeProp={true} />} />
-          <Route path="/" element={<PrivateRoute><MainLayout /></PrivateRoute>} />
+          {/* Use MainLayout as a wrapper for the main app routes */}
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <MainLayout />
+              </PrivateRoute>
+            }
+          >
+            <Route index element={<BagSchedule />} />
+            <Route path="bag-schedule" element={<BagSchedule />} />
+            <Route path="active" element={<PatientList />} />
+            <Route path="inactive" element={<InactivePatients />} />
+          </Route>
           <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
-          {/* REMOVE THIS ROUTE:
-          <Route path="/archived-patients" element={<PrivateRoute><ArchivedPatients /></PrivateRoute>} /> */}
           <Route path="/print-schedule/:id" element={<PrivateRoute><PrintSchedule /></PrivateRoute>} />
         </Routes>
       </HashRouter>
