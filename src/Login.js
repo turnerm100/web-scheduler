@@ -1,4 +1,3 @@
-// src/Login.js
 import React, { useState, useEffect } from 'react';
 import {
   getAuth,
@@ -17,19 +16,37 @@ export default function Login({ isAdminModeProp = false }) {
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
   const [isAdminMode, setIsAdminMode] = useState(isAdminModeProp);
+  const [checkingAdmin, setCheckingAdmin] = useState(false);
   const navigate = useNavigate();
   const auth = getAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      setError('');
+      if (currentUser && isAdminMode) {
+        setCheckingAdmin(true);
+        // Check if already admin, and auto-redirect
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && userSnap.data().isAdmin === true) {
+          navigate('/admin');
+        }
+        setCheckingAdmin(false);
+      } else if (currentUser && !isAdminMode) {
+        // Non-admin login: send to normal user page
+        navigate('/');
+      }
     });
     return () => unsubscribe();
-  }, [auth]);
+    // eslint-disable-next-line
+  }, [auth, isAdminMode, navigate]);
 
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+
     setError('');
 
     if (!email || !password) {
@@ -47,19 +64,12 @@ export default function Login({ isAdminModeProp = false }) {
       await result.user.getIdToken(true);
 
       if (isAdminMode) {
-        try {
-          const userRef = doc(db, 'users', result.user.uid);
-          const userSnap = await getDoc(userRef);
-
-          if (userSnap.exists() && userSnap.data().isAdmin === true) {
-            navigate('/admin');
-          } else {
-            setError('Access denied. This account is not an admin.');
-            await signOut(auth);
-          }
-        } catch (err) {
-          console.error('Error checking admin status:', err);
-          setError('Error verifying admin access.');
+        const userRef = doc(db, 'users', result.user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && userSnap.data().isAdmin === true) {
+          navigate('/admin');
+        } else {
+          setError('Access denied. This account is not an admin.');
           await signOut(auth);
         }
       } else {
@@ -151,7 +161,7 @@ export default function Login({ isAdminModeProp = false }) {
             <button onClick={handleLogout}>Log Out</button>
           </>
         ) : (
-          <>
+          <form onSubmit={handleLogin}>
             <h2>{isAdminMode ? 'Admin Login' : 'User Login'}</h2>
 
             <input
@@ -160,6 +170,7 @@ export default function Login({ isAdminModeProp = false }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={{ display: 'block', width: '100%', marginBottom: 10 }}
+              autoFocus
             />
 
             <input
@@ -172,11 +183,12 @@ export default function Login({ isAdminModeProp = false }) {
 
             {error && <p style={{ color: 'red' }}>{error}</p>}
 
-            <button onClick={handleLogin} style={{ marginBottom: 10 }}>
-              Log In
+            <button type="submit" style={{ marginBottom: 10 }}>
+              {checkingAdmin ? 'Checking...' : 'Log In'}
             </button>
 
             <button
+              type="button"
               onClick={handleForgotPassword}
               style={{
                 display: 'block',
@@ -191,7 +203,7 @@ export default function Login({ isAdminModeProp = false }) {
             >
               Forgot Password or Username?
             </button>
-          </>
+          </form>
         )}
       </div>
     </>
