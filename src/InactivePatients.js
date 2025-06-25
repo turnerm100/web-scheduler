@@ -6,7 +6,9 @@ import {
   onSnapshot,
   deleteDoc,
   doc,
-  updateDoc
+  updateDoc,
+  getDoc,
+  setDoc
 } from 'firebase/firestore';
 import AddPatient from './AddPatient';
 
@@ -15,36 +17,55 @@ export default function InactivePatients() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-useEffect(() => {
-  const unsub = onSnapshot(collection(db, 'patients'), (snapshot) => {
-    const inactive = snapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(p => p.status === 'On Hold' || p.status === 'Discharged')
-      .sort((a, b) => a.name.localeCompare(b.name));
-    setPatients(inactive);
-  });
-  return () => unsub();
-}, []);
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'patients'), (snapshot) => {
+      const inactive = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(p => p.status === 'On Hold' || p.status === 'Discharged')
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setPatients(inactive);
+    });
+    return () => unsub();
+  }, []);
 
-const handleStatusChange = async (patient, newStatus) => {
-  if (!patient || !patient.id) return;
-  if (newStatus === patient.status) return;
+  const handleStatusChange = async (patient, newStatus) => {
+    if (!patient || !patient.id) return;
+    if (newStatus === patient.status) return;
+    await updateDoc(doc(db, 'patients', patient.id), { status: newStatus });
 
-  await updateDoc(doc(db, 'patients', patient.id), { status: newStatus });
-
-  if (newStatus === 'Active' || newStatus === 'Pending') {
-    alert('Patient will now be visible on the Active Patients page.');
-  }
-};
-
-  const handleDelete = async (id) => {
-    const confirm = window.confirm('Delete this patient permanently?');
-    if (confirm) {
-      await deleteDoc(doc(db, 'patients', id));
-      alert('Patient deleted.');
+    if (newStatus === 'Active' || newStatus === 'Pending') {
+      alert('Patient will now be visible on the Active Patients page.');
     }
   };
 
+  const handleDelete = async (id) => {
+    const confirm = window.confirm('Delete this patient permanently and archive to discharged list?');
+    if (!confirm) return;
+
+    // 1. Get the patient data
+    const patientRef = doc(db, 'patients', id);
+    const patientSnap = await getDoc(patientRef);
+
+    if (!patientSnap.exists()) {
+      alert('Patient not found.');
+      return;
+    }
+    const patientData = patientSnap.data();
+
+    // 2. Copy to discharged_archive
+    const archiveRef = doc(db, 'discharged_archive', id);
+    await setDoc(archiveRef, {
+      ...patientData,
+      archivedAt: new Date()
+    });
+
+    // 3. Delete from patients
+    await deleteDoc(patientRef);
+
+    alert('Patient archived and deleted.');
+  };
+
+  // 👇 These functions were missing!
   const handleEdit = (patient) => {
     setSelectedPatient(patient);
     setShowModal(true);

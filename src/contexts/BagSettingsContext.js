@@ -1,7 +1,8 @@
 // src/contexts/BagSettingsContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const BagSettingsContext = createContext();
 
@@ -13,7 +14,17 @@ export function BagSettingsProvider({ children }) {
   });
 
   useEffect(() => {
-    async function fetchSettings() {
+    // Only run after user is authenticated
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setBagSettings({
+          enable5DayBags: false,
+          enable6DayBags: false,
+          loading: false,
+        });
+        return;
+      }
+      // Now safe to fetch settings
       const settingsRef = doc(db, 'settings', 'global');
       const snap = await getDoc(settingsRef);
       if (snap.exists()) {
@@ -24,10 +35,15 @@ export function BagSettingsProvider({ children }) {
           loading: false,
         });
       } else {
-        setBagSettings({ enable5DayBags: false, enable6DayBags: false, loading: false });
+        setBagSettings({
+          enable5DayBags: false,
+          enable6DayBags: false,
+          loading: false,
+        });
       }
-    }
-    fetchSettings();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   return (

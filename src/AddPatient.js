@@ -101,10 +101,16 @@ export default function AddPatient({ editData, onClose }) {
     }
 
     // Build the data object to save
-    const saveData = {
-      ...formData,
-      pharmTeam, // This saves as one string just like before
-    };
+const saveData = {
+  ...formData,
+  pharmTeam,
+};
+
+// 👇 Add this logic to update the statusUpdatedAt timestamp if Discharged
+if (formData.status === 'Discharged') {
+  saveData.statusUpdatedAt = Timestamp.now();
+}
+
     // Optionally, you can remove pharmTeamNumber/Letter before saving, up to you:
     delete saveData.pharmTeamNumber;
     delete saveData.pharmTeamLetter;

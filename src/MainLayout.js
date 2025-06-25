@@ -1,6 +1,6 @@
 // src/MainLayout.js
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import AddPatient from './AddPatient';
 import BagSchedule from './BagSchedule';
 import PatientList from './PatientList';
@@ -74,30 +74,29 @@ export default function MainLayout() {
           <button className="rounded-button" onClick={() => setShowAddModal(true)} style={{ marginRight: 10 }}>
             Add Patient
           </button>
-
-<div
-  style={{ position: 'relative' }}
-  onMouseEnter={() => setShowDropdown(true)}
-  onMouseLeave={() => setShowDropdown(false)}
->
-  <button className="rounded-button">☰ Menu</button>
-  {showDropdown && (
-    <ul style={{
-      position: 'absolute',
-      right: 0,
-      backgroundColor: 'white',
-      listStyle: 'none',
-      padding: '10px',
-      margin: 0,
-      boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-      zIndex: 999,
-      color: '#000'
-    }}>
-      <li style={dropdownItem} onClick={() => navigate('/admin-login')}>Admin Login</li>
-      <li style={dropdownItem} onClick={handleLogout}>Logout</li>
-    </ul>
-  )}
-</div>
+          <div
+            style={{ position: 'relative' }}
+            onMouseEnter={() => setShowDropdown(true)}
+            onMouseLeave={() => setShowDropdown(false)}
+          >
+            <button className="rounded-button">☰ Menu</button>
+            {showDropdown && (
+              <ul style={{
+                position: 'absolute',
+                right: 0,
+                backgroundColor: 'white',
+                listStyle: 'none',
+                padding: '10px',
+                margin: 0,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                zIndex: 999,
+                color: '#000'
+              }}>
+                <li style={dropdownItem} onClick={() => navigate('/admin-login')}>Admin Login</li>
+                <li style={dropdownItem} onClick={handleLogout}>Logout</li>
+              </ul>
+            )}
+          </div>
         </div>
       </nav>
 
