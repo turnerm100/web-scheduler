@@ -507,27 +507,34 @@ const handleDeleteUser = async (uid, email) => {
                         onChange={() => handleToggleAdmin(user.uid, user.email, user.isAdmin)}
                       />
                     </td>
-                    <td>
-                      <button
-                        className="rounded-button"
-                        onClick={() => handleToggleStatus(user.uid, user.disabled, user.email)}
-                        style={{ marginRight: 5 }}
-                      >
-                        {user.disabled ? 'Activate' : 'Deactivate'}
-                      </button>
-
-                      <button
-                        className="rounded-button"
-                        onClick={() => handleDeleteUser(user.uid, user.email)}
-                        style={{
-                          marginLeft: 5,
-                          backgroundColor: '#B00020',
-                          color: 'white'
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </td>
+<td style={{ whiteSpace: 'nowrap' }}>
+  <button
+    className="rounded-button"
+    onClick={() => handleToggleStatus(user.uid, user.disabled, user.email)}
+    style={{
+      marginRight: 5,
+      visibility: user.email === 'YOUR-ADMIN-EMAIL@EMAIL.COM' ? 'hidden' : 'visible', // Optionally hide for super admin
+      width: 95, // or whatever fixed width works best for your text/buttons
+      minWidth: 85 // make consistent width
+    }}
+    // Optionally, you can conditionally hide for your own admin, or just always render
+  >
+    {user.disabled ? 'Activate' : 'Deactivate'}
+  </button>
+  <button
+    className="rounded-button"
+    onClick={() => handleDeleteUser(user.uid, user.email)}
+    style={{
+      marginLeft: 5,
+      backgroundColor: '#B00020',
+      color: 'white',
+      width: 75,
+      minWidth: 70
+    }}
+  >
+    Delete
+  </button>
+</td>
                   </tr>
                 ))}
               </tbody>
