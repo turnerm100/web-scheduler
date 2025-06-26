@@ -440,7 +440,7 @@ const handleDeleteUser = async (uid, email) => {
         placeholder="New User Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        style={{ width: '300px', marginBottom: 0 }}
+        style={{ width: '450px', marginBottom: 0 }}
         autoComplete="off"
       />
     </div>
@@ -455,7 +455,7 @@ const handleDeleteUser = async (uid, email) => {
         placeholder="New User Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        style={{ width: '300px', marginBottom: 0 }}
+        style={{ width: '450px', marginBottom: 0 }}
         autoComplete="new-password"
       />
     </div>
