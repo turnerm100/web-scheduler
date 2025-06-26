@@ -2,9 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, addDoc, updateDoc, Timestamp, doc } from 'firebase/firestore';
+import { getAuth } from "firebase/auth";
+import { logAuditEvent } from './utils/logAuditEvent';
 
 export default function AddPatient({ editData, onClose }) {
   const [activeTab, setActiveTab] = useState('patient');
+  const user = getAuth().currentUser; // call right before logAuditEvent
 
   // Add number and letter for pharmTeam
   const [formData, setFormData] = useState({
@@ -84,54 +87,71 @@ export default function AddPatient({ editData, onClose }) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const { name, mrn, dob, pharmTeamNumber, pharmTeamLetter } = formData;
-    if (!name.trim() || !mrn.trim() || !dob.trim()) {
-      alert('Patient Name, MRN #, and DOB are required.');
-      return;
-    }
-    // Combine for saving
-    const pharmTeam = (pharmTeamNumber && pharmTeamLetter)
-      ? `${pharmTeamNumber}${pharmTeamLetter}`
-      : '';
-    if (!pharmTeam) {
-      alert('Please select both a Pharmacy Team number and letter.');
-      return;
-    }
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  const { name, mrn, dob, pharmTeamNumber, pharmTeamLetter } = formData;
+  if (!name.trim() || !mrn.trim() || !dob.trim()) {
+    alert('Patient Name, MRN #, and DOB are required.');
+    return;
+  }
+  // Combine for saving
+  const pharmTeam = (pharmTeamNumber && pharmTeamLetter)
+    ? `${pharmTeamNumber}${pharmTeamLetter}`
+    : '';
+  if (!pharmTeam) {
+    alert('Please select both a Pharmacy Team number and letter.');
+    return;
+  }
 
-    // Build the data object to save
-const saveData = {
-  ...formData,
-  pharmTeam,
-};
-
-// 👇 Add this logic to update the statusUpdatedAt timestamp if Discharged
-if (formData.status === 'Discharged') {
-  saveData.statusUpdatedAt = Timestamp.now();
-}
-
-    // Optionally, you can remove pharmTeamNumber/Letter before saving, up to you:
-    delete saveData.pharmTeamNumber;
-    delete saveData.pharmTeamLetter;
-
-    try {
-      if (editData) {
-        await updateDoc(doc(db, 'patients', editData.id), saveData);
-        alert('Patient updated successfully!');
-      } else {
-        await addDoc(collection(db, 'patients'), {
-          ...saveData,
-          createdAt: Timestamp.now()
-        });
-        alert('Patient added successfully!');
-      }
-      if (onClose) onClose();
-    } catch (error) {
-      console.error('Error saving patient:', error);
-      alert('Failed to save patient.');
-    }
+  // Build the data object to save
+  const saveData = {
+    ...formData,
+    pharmTeam,
   };
+
+  // 👇 Add this logic to update the statusUpdatedAt timestamp if Discharged
+  if (formData.status === 'Discharged') {
+    saveData.statusUpdatedAt = Timestamp.now();
+  }
+
+  // Optionally, you can remove pharmTeamNumber/Letter before saving, up to you:
+  delete saveData.pharmTeamNumber;
+  delete saveData.pharmTeamLetter;
+
+  try {
+    // Always get the user RIGHT before logging the event
+    const user = getAuth().currentUser;
+
+    if (editData) {
+      await updateDoc(doc(db, 'patients', editData.id), saveData);
+      await logAuditEvent(
+        user,
+        'WRITE',
+        'Patient',
+        editData.id,
+        'Updated patient record'
+      );
+      alert('Patient updated successfully!');
+    } else {
+      const docRef = await addDoc(collection(db, 'patients'), {
+        ...saveData,
+        createdAt: Timestamp.now()
+      });
+      await logAuditEvent(
+        user,
+        'CREATE',
+        'Patient',
+        docRef.id,
+        'Created patient record'
+      );
+      alert('Patient added successfully!');
+    }
+    if (onClose) onClose();
+  } catch (error) {
+    console.error('Error saving patient:', error);
+    alert('Failed to save patient.');
+  }
+};
 
   const handleCancel = () => {
     if (onClose) onClose();

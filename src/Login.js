@@ -18,6 +18,7 @@ export default function Login({ isAdminModeProp = false }) {
   const [user, setUser] = useState(null);
   const [isAdminMode, setIsAdminMode] = useState(isAdminModeProp);
   const [checkingAdmin, setCheckingAdmin] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const auth = getAuth();
 
@@ -60,6 +61,7 @@ export default function Login({ isAdminModeProp = false }) {
       return;
     }
 
+    setLoading(true);
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       await result.user.getIdToken(true);
@@ -78,6 +80,8 @@ export default function Login({ isAdminModeProp = false }) {
       }
     } catch (err) {
       setError('Login failed. Check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -88,7 +92,6 @@ export default function Login({ isAdminModeProp = false }) {
 
   const handleForgotPassword = () => {
     const emailPrompt = window.prompt('Please enter your email to reset your password:');
-
     if (!emailPrompt) return;
 
     if (!isValidEmail(emailPrompt)) {
@@ -99,6 +102,9 @@ export default function Login({ isAdminModeProp = false }) {
     sendPasswordResetEmail(auth, emailPrompt)
       .then(() => {
         alert('A password reset email has been sent to your inbox.');
+        setTimeout(() => {
+          alert('If you forgot your username, please contact the system administrator.');
+        }, 800);
       })
       .catch((error) => {
         console.error('Error sending reset email:', error);
@@ -133,25 +139,28 @@ export default function Login({ isAdminModeProp = false }) {
           </h1>
         </div>
 
-        <button
-          style={{
-            background: 'white',
-            color: '#215C98',
-            padding: '6px 12px',
-            borderRadius: '5px',
-            border: 'none',
-            fontWeight: 'bold',
-            cursor: 'pointer'
-          }}
-          onClick={() => {
-            setIsAdminMode(!isAdminMode);
-            setError('');
-            setEmail('');
-            setPassword('');
-          }}
-        >
-          {isAdminMode ? 'Switch to User Login' : 'Admin Login'}
-        </button>
+        {/* Switcher hidden if already logged in */}
+        {!user && (
+          <button
+            style={{
+              background: 'white',
+              color: '#215C98',
+              padding: '6px 12px',
+              borderRadius: '5px',
+              border: 'none',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+            onClick={() => {
+              setIsAdminMode(!isAdminMode);
+              setError('');
+              setEmail('');
+              setPassword('');
+            }}
+          >
+            {isAdminMode ? 'Switch to User Login' : 'Admin Login'}
+          </button>
+        )}
       </nav>
 
       {/* ✅ Login Content */}
@@ -169,6 +178,7 @@ export default function Login({ isAdminModeProp = false }) {
               type="email"
               placeholder="Email"
               value={email}
+              autoComplete="username"
               onChange={(e) => setEmail(e.target.value)}
               style={{ display: 'block', width: '100%', marginBottom: 10 }}
               autoFocus
@@ -178,14 +188,19 @@ export default function Login({ isAdminModeProp = false }) {
               type="password"
               placeholder="Password"
               value={password}
+              autoComplete="current-password"
               onChange={(e) => setPassword(e.target.value)}
               style={{ display: 'block', width: '100%', marginBottom: 10 }}
             />
 
             {error && <p style={{ color: 'red' }}>{error}</p>}
 
-            <button type="submit" style={{ marginBottom: 10 }}>
-              {checkingAdmin ? 'Checking...' : 'Log In'}
+            <button
+              type="submit"
+              style={{ marginBottom: 10, width: '100%' }}
+              disabled={loading || checkingAdmin}
+            >
+              {(loading || checkingAdmin) ? 'Checking...' : 'Log In'}
             </button>
 
             <button
@@ -202,8 +217,13 @@ export default function Login({ isAdminModeProp = false }) {
                 cursor: 'pointer'
               }}
             >
-              Forgot Password or Username?
+              Forgot Password?
             </button>
+
+            {/* Generic admin contact info */}
+            <div style={{ marginTop: 15, color: '#555', fontSize: 13 }}>
+              For username or access issues, please contact the system administrator.
+            </div>
           </form>
         )}
       </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { db } from './firebase';
+import { getAuth } from "firebase/auth";
 import {
   collection,
   onSnapshot,
@@ -21,6 +22,7 @@ import {
 } from './utils/generateBagSchedule';
 import { shouldHighlightRow } from './utils/highlighting';
 import { useBagSettings } from './contexts/BagSettingsContext';
+import { logAuditEvent } from './utils/logAuditEvent';
 
 export default function BagSchedule() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -164,41 +166,61 @@ export default function BagSchedule() {
   };
 
   // Save Logic with error handling
-  const handleSaveOverrides = async (patientId) => {
-    try {
-      const overrides = overrideEdits[patientId] || {};
-      const times = bagTimeEdits[patientId] || {};
-      const bagOverrides = Array.from({ length: 28 }, (_, i) => overrides[i] ?? null);
-      const bagTimes = {
-        bags: Array.from({ length: 28 }, (_, i) => times[i] ?? ''),
-        disconnect: times['disconnect'] ?? ''
-      };
-      await updateDoc(doc(db, 'patients', patientId), { bagOverrides, bagTimes });
-      await refreshSavedPatients();
-      alert('Overrides and times saved!');
-    } catch (err) {
-      alert('Error saving overrides/times.');
-      console.error(err);
-    }
-  };
+const handleSaveOverrides = async (patientId) => {
+  try {
+    const overrides = overrideEdits[patientId] || {};
+    const times = bagTimeEdits[patientId] || {};
+    const bagOverrides = Array.from({ length: 28 }, (_, i) => overrides[i] ?? null);
+    const bagTimes = {
+      bags: Array.from({ length: 28 }, (_, i) => times[i] ?? ''),
+      disconnect: times['disconnect'] ?? ''
+    };
+    await updateDoc(doc(db, 'patients', patientId), { bagOverrides, bagTimes });
+    await refreshSavedPatients();
 
-  const handleSaveThenPrint = async (patientId) => {
-    try {
-      const overrides = overrideEdits[patientId] || {};
-      const times = bagTimeEdits[patientId] || {};
-      const bagOverrides = Array.from({ length: 28 }, (_, i) => overrides[i] ?? null);
-      const bagTimes = {
-        bags: Array.from({ length: 28 }, (_, i) => times[i] ?? ''),
-        disconnect: times['disconnect'] ?? ''
-      };
-      await updateDoc(doc(db, 'patients', patientId), { bagOverrides, bagTimes });
-      await refreshSavedPatients();
-      window.location.href = `#/print-schedule/${patientId}`;
-    } catch (error) {
-      alert('Could not save changes before printing. Please try again.');
-      console.error(error);
-    }
-  };
+    // Get the current user BEFORE calling logAuditEvent
+    const user = getAuth().currentUser;
+    await logAuditEvent(
+      user,
+      'WRITE',
+      'Schedule',
+      patientId, // Use patientId as the resource ID
+      'Updated bag schedule or override'
+    );
+    alert('Overrides and times saved!');
+  } catch (err) {
+    alert('Error saving overrides/times.');
+    console.error(err);
+  }
+};
+
+ const handleSaveThenPrint = async (patientId) => {
+  try {
+    const overrides = overrideEdits[patientId] || {};
+    const times = bagTimeEdits[patientId] || {};
+    const bagOverrides = Array.from({ length: 28 }, (_, i) => overrides[i] ?? null);
+    const bagTimes = {
+      bags: Array.from({ length: 28 }, (_, i) => times[i] ?? ''),
+      disconnect: times['disconnect'] ?? ''
+    };
+    await updateDoc(doc(db, 'patients', patientId), { bagOverrides, bagTimes });
+
+    // Get the current user for audit logging
+    const user = getAuth().currentUser;
+    await logAuditEvent(
+      user,
+      'WRITE',
+      'Schedule',
+      patientId, // Use patientId (not scheduleId)
+      'Updated bag schedule or override'
+    );
+    await refreshSavedPatients();
+    window.location.href = `#/print-schedule/${patientId}`;
+  } catch (error) {
+    alert('Could not save changes before printing. Please try again.');
+    console.error(error);
+  }
+};
 
   // Combined Filter, Sort, and Search
   useEffect(() => {
@@ -727,38 +749,48 @@ export default function BagSchedule() {
                   <div style={{ marginBottom: '12px', fontSize: '12px', textAlign: 'center' }}>
                     Provides a schedule of bag changes and nurse visits.
                   </div>
-                  <button
-                    className="rounded-button"
-                    style={{ backgroundColor: '#FF4C4C', color: 'white', marginBottom: '4px', width: '100%' }}
-                    onClick={async () => {
-                      if (window.confirm('Are you sure you want to delete the Blincyto schedule for this patient?')) {
-                        try {
-                          await updateDoc(doc(db, 'patients', patient.id), {
-                            cycle: '',
-                            daysInCycle: '',
-                            pipsBagChanges: '',
-                            nursingVisitPlan: '',
-                            nursingVisitDay: '',
-                            hospStartDate: '',
-                            ourStartDate: '',
-                            hookupTime: '',
-                            isPreservativeFree: false,
-                            bagOverrides: [],
-                            bagTimes: {
-                              bags: Array(28).fill(''),
-                              disconnect: ''
-                            }
-                          });
-                          alert('Blincyto schedule deleted for this patient.');
-                        } catch (error) {
-                          console.error('Error clearing schedule:', error);
-                          alert('Failed to delete Blincyto schedule.');
-                        }
-                      }
-                    }}
-                  >
-                    Delete Schedule
-                  </button>
+<button
+  className="rounded-button"
+  style={{ backgroundColor: '#FF4C4C', color: 'white', marginBottom: '4px', width: '100%' }}
+  onClick={async () => {
+    if (window.confirm('Are you sure you want to delete the Blincyto schedule for this patient?')) {
+      try {
+        await updateDoc(doc(db, 'patients', patient.id), {
+          cycle: '',
+          daysInCycle: '',
+          pipsBagChanges: '',
+          nursingVisitPlan: '',
+          nursingVisitDay: '',
+          hospStartDate: '',
+          ourStartDate: '',
+          hookupTime: '',
+          isPreservativeFree: false,
+          bagOverrides: [],
+          bagTimes: {
+            bags: Array(28).fill(''),
+            disconnect: ''
+          }
+        });
+
+        // 🟢 Add this audit log after schedule deletion
+        await logAuditEvent(
+          getAuth().currentUser,
+          'DELETE',
+          'Schedule',
+          patient.id,
+          'Deleted Blincyto schedule for patient'
+        );
+
+        alert('Blincyto schedule deleted for this patient.');
+      } catch (error) {
+        console.error('Error clearing schedule:', error);
+        alert('Failed to delete Blincyto schedule.');
+      }
+    }
+  }}
+>
+  Delete Schedule
+</button>
                   <div style={{ fontSize: '12px', textAlign: 'center' }}>
                     Current Blincyto cycle information will be deleted. Patient information will be saved.
                   </div>

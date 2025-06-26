@@ -1,6 +1,8 @@
 // src/InactivePatients.js
 import React, { useEffect, useState } from 'react';
 import { db } from './firebase';
+import { getAuth } from "firebase/auth";
+import { logAuditEvent } from './utils/logAuditEvent';
 import {
   collection,
   onSnapshot,
@@ -28,42 +30,61 @@ export default function InactivePatients() {
     return () => unsub();
   }, []);
 
-  const handleStatusChange = async (patient, newStatus) => {
-    if (!patient || !patient.id) return;
-    if (newStatus === patient.status) return;
-    await updateDoc(doc(db, 'patients', patient.id), { status: newStatus });
+const handleStatusChange = async (patient, newStatus) => {
+  if (!patient || !patient.id) return;
+  if (newStatus === patient.status) return;
+  await updateDoc(doc(db, 'patients', patient.id), { status: newStatus });
 
-    if (newStatus === 'Active' || newStatus === 'Pending') {
-      alert('Patient will now be visible on the Active Patients page.');
-    }
-  };
+  // Add audit log
+  const user = getAuth().currentUser;
+  await logAuditEvent(
+    user,
+    'WRITE',
+    'Patient',
+    patient.id,
+    `Changed status to ${newStatus}`
+  );
 
-  const handleDelete = async (id) => {
-    const confirm = window.confirm('Delete this patient permanently and archive to discharged list?');
-    if (!confirm) return;
+  if (newStatus === 'Active' || newStatus === 'Pending') {
+    alert('Patient will now be visible on the Active Patients page.');
+  }
+};
 
-    // 1. Get the patient data
-    const patientRef = doc(db, 'patients', id);
-    const patientSnap = await getDoc(patientRef);
 
-    if (!patientSnap.exists()) {
-      alert('Patient not found.');
-      return;
-    }
-    const patientData = patientSnap.data();
+const handleDelete = async (id) => {
+  const confirm = window.confirm('Delete this patient permanently and archive to discharged list?');
+  if (!confirm) return;
 
-    // 2. Copy to discharged_archive
-    const archiveRef = doc(db, 'discharged_archive', id);
-    await setDoc(archiveRef, {
-      ...patientData,
-      archivedAt: new Date()
-    });
+  const patientRef = doc(db, 'patients', id);
+  const patientSnap = await getDoc(patientRef);
 
-    // 3. Delete from patients
-    await deleteDoc(patientRef);
+  if (!patientSnap.exists()) {
+    alert('Patient not found.');
+    return;
+  }
+  const patientData = patientSnap.data();
 
-    alert('Patient archived and deleted.');
-  };
+  const archiveRef = doc(db, 'discharged_archive', id);
+  await setDoc(archiveRef, {
+    ...patientData,
+    archivedAt: new Date()
+  });
+
+  await deleteDoc(patientRef);
+
+  // Add audit log
+  const user = getAuth().currentUser;
+  await logAuditEvent(
+    user,
+    'DELETE',
+    'Patient',
+    id,
+    'Deleted and archived patient record'
+  );
+
+  alert('Patient archived and deleted.');
+};
+
 
   // 👇 These functions were missing!
   const handleEdit = (patient) => {
