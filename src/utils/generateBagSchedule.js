@@ -37,34 +37,50 @@ export function getBagDurations(
   const bags = [];
   let remaining = daysLeft;
 
-  if (isPreservativeFree) {
-    for (let i = 0; i < 28 && remaining > 0; i++) {
-      const rawOverride = overrides[i];
-      const override = Number.isInteger(rawOverride) ? rawOverride : parseInt(rawOverride);
-      let duration;
-      if (override === 1) {
-        duration = 1;
-      } else if (isNaN(override)) {
-        if (remaining % 2 === 1 && bags.length === 0) {
-          duration = 1;
-        } else {
-          duration = 2;
-        }
-      } else {
-        duration = 2;
+if (isPreservativeFree) {
+  let i = 0;
+  // If cycle odd, start with a 1-day bag
+  if (remaining % 2 === 1) {
+    bags.push(1);
+    remaining -= 1;
+    i++; // Advance position so overrides stay aligned
+  }
+
+  while (remaining > 0 && i < 28) {
+    const override = parseInt(overrides[i]);
+    let duration;
+
+    if (override === 1) {
+      // User wants a 1-day bag here; put it, then do another 1-day bag for the leftover day (if more than 1 day left)
+      bags.push(1);
+      remaining -= 1;
+
+      // If more days left and the next override is also 1, do it again
+      // Or if no override for next, default to 1 for leftover
+      if (remaining > 0 && (overrides[i + 1] === 1 || isNaN(parseInt(overrides[i + 1])))) {
+        bags.push(1);
+        remaining -= 1;
+        i++; // We manually handled an extra bag
       }
-      if (duration > remaining) duration = remaining;
+      // If not, just continue
+    } else if (override === 2) {
+      bags.push(2);
+      remaining -= 2;
+    } else {
+      // Default: take 2-day if possible, else 1-day
+      duration = Math.min(2, remaining);
       bags.push(duration);
       remaining -= duration;
     }
-    return bags;
+    i++;
   }
+  return bags;
+}
 
   for (let i = 0; i < 28 && remaining > 0; i++) {
     // Only use override if present and valid
     const override = parseInt(overrides[i]);
     let duration;
-
     if ([1, 2, 3, 4, 5, 6, 7].includes(override)) {
       duration = override;
     } else if (remaining === 5 && enable5DayBags) {
