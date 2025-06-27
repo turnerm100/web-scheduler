@@ -3,10 +3,19 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { useAuth } from './AuthProvider'; // <-- NEW
+import { useAuth } from './AuthProvider';
 
+// ----- Utility: Nurse Visit Info Statement -----
 function getNurseVisitStatement(bagChangeBy, centralLineCareBy, labsManagedBy, nursingVisitDay) {
-  const key = `${bagChangeBy === 'Providence Infusion' ? 'PI' : 'CG'},${centralLineCareBy === 'Providence Infusion' ? 'PI' : 'H/C'},${labsManagedBy === 'Providence Infusion' ? 'PI' : labsManagedBy === 'Not ordered' ? 'N/O' : 'H/C'}`;
+  const key =
+    `${bagChangeBy === 'Providence Infusion' ? 'PI' : 'CG'},` +
+    `${centralLineCareBy === 'Providence Infusion' ? 'PI' : 'H/C'},` +
+    `${labsManagedBy === 'Providence Infusion'
+      ? 'PI'
+      : labsManagedBy === 'Not ordered'
+        ? 'N/O'
+        : 'H/C'
+    }`;
 
   const statements = {
     'PI,PI,PI': `Providence Infusion will be managing all Blincyto bag changes, central line care, and lab draws.
@@ -89,7 +98,6 @@ Please contact Providence Infusion with any questions or concerns.`
   };
 
   const statement = statements[key];
-
   if (Array.isArray(statement)) {
     return (
       <span>
@@ -99,40 +107,36 @@ Please contact Providence Infusion with any questions or concerns.`
       </span>
     );
   }
-
   return statement;
 }
 
+// --------- Main Component ---------
 export default function PrintSchedule() {
   const { id } = useParams();
   const [patient, setPatient] = useState(null);
-  const { user, authLoading } = useAuth(); // <-- NEW
+  const { user, authLoading } = useAuth();
 
   useEffect(() => {
-    if (authLoading || !user) return; // <-- ADD THIS GUARD
-
+    if (authLoading || !user) return;
     const fetchPatient = async () => {
       const docRef = doc(db, 'patients', id);
       const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setPatient({ id, ...docSnap.data() });
-        // Removed auto-print
-      } else {
-        alert('Patient not found.');
-      }
+      if (docSnap.exists()) setPatient({ id, ...docSnap.data() });
+      else alert('Patient not found.');
     };
     fetchPatient();
-  }, [authLoading, user, id]); // <-- ADD authLoading and user to the array
+  }, [authLoading, user, id]);
 
   if (authLoading) return <div style={{ padding: '40px' }}>Loading...</div>;
   if (!user) return <div style={{ padding: '40px' }}>Please sign in to view schedule.</div>;
   if (!patient) return <div style={{ padding: '40px' }}>Loading...</div>;
 
+  // ---- Utilities ----
   const parseDate = (str) => {
     if (!str) return null;
     const [year, month, day] = str.split('-').map(Number);
-    const parsed = new Date(year, month - 1, day);
-    return isNaN(parsed) ? null : parsed;
+    const d = new Date(year, month - 1, day);
+    return isNaN(d) ? null : d;
   };
 
   const formatDateKey = (date) =>
@@ -149,6 +153,7 @@ export default function PrintSchedule() {
     }
   };
 
+  // -------- Bag Schedule Logic --------
   const generateSchedule = () => {
     const totalDays = parseInt(patient.daysInCycle, 10);
     const startDate = parseDate(patient.ourStartDate);
@@ -156,19 +161,21 @@ export default function PrintSchedule() {
     let daysPassed = Math.floor((startDate - hospitalDate) / (1000 * 60 * 60 * 24));
     daysPassed = Math.max(0, daysPassed);
     const remaining = totalDays - daysPassed;
-
     const overrides = patient.bagOverrides || [];
     const schedule = [];
-
     let current = new Date(startDate);
     let remainingDays = remaining;
 
     for (let i = 0; i < 28 && remainingDays > 0; i++) {
       const override = parseInt(overrides[i]);
       let duration;
-
       if ([1, 2, 3, 4, 7].includes(override)) {
         duration = override;
+      } else if (patient.isPreservativeFree) {
+        if (remainingDays === 1) duration = 1;
+        else if (remainingDays === 2) duration = 2;
+        else if (remainingDays > 2) duration = 2;
+        else duration = 1;
       } else {
         if (remainingDays <= 4) duration = remainingDays;
         else if (remainingDays === 5) duration = 2;
@@ -189,7 +196,8 @@ export default function PrintSchedule() {
         date: start,
         duration,
         volume,
-        rate
+        rate,
+        bagIndex: i
       });
 
       current.setDate(current.getDate() + duration);
@@ -199,7 +207,8 @@ export default function PrintSchedule() {
     return schedule;
   };
 
-  const buildCalendarGridForMonth = (year, month, dayMap) => {
+  // -------- Calendar Grid for Month --------
+  const buildCalendarGridForMonth = (year, month, dayMap, rnVisits = []) => {
     const firstOfMonth = new Date(year, month, 1);
     const lastOfMonth = new Date(year, month + 1, 0);
     const startDay = firstOfMonth.getDay();
@@ -233,49 +242,52 @@ export default function PrintSchedule() {
               key={index}
               style={{
                 marginTop: '5px',
-background:
-  item.type === 'final-disconnect' ? '#f8d7da' :   // RED background (Bootstrap danger background)
-  item.type === 'bag' && item.isReprogram ? '#d4edda' :
-  item.type === 'bag' ? '#eaf3fb' : 'transparent',
-border: item.type === 'final-disconnect' ? '1px solid #721c24' :  // RED border (Bootstrap danger border)
-        item.type === 'bag' && item.isReprogram ? '1px solid #155724' :
-        item.type === 'bag' ? '1px solid #153D64' : 'none',
+                background:
+                  item.type === 'final-disconnect' ? '#f8d7da' :
+                  item.type === 'bag' && item.isReprogram ? '#d4edda' :
+                  item.type === 'bag' ? '#eaf3fb' : 'transparent',
+                border:
+                  item.type === 'final-disconnect' ? '1px solid #721c24' :
+                  item.type === 'bag' && item.isReprogram ? '1px solid #155724' :
+                  item.type === 'bag' ? '1px solid #153D64' : 'none',
                 borderRadius: '6px',
                 padding: '5px',
                 fontSize: '12px'
               }}
             >
               {item.type === 'final-disconnect' && (
-<div style={{ fontSize: '11px', fontWeight: 'bold', color: '#721c24' }}>
-  Final Disconnect – Your blincyto Cycle will be completed on this date. A nurse will be doing your final disconnect. You should receive a call the day before to schedule the appropriate time for this visit.
-</div>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#721c24' }}>
+                  Final Disconnect – Your blincyto Cycle will be completed on this date. A nurse will be doing your final disconnect. You should receive a call the day before to schedule the appropriate time for this visit.
+                </div>
               )}
-{item.type === 'bag' && (
-  <>
-    <strong>{item.label}</strong><br />
-    Duration: {item.duration} day(s)<br />
-    {patient.bagChangeBy === "Providence Infusion" ? (
-      <span style={{ color: '#215C98', fontWeight: 600 }}>
-        A nurse will make a visit to do the bag change.<br />
-        You will receive a call the day before to schedule your visit time.
-      </span>
-    ) : (
-      <span style={{ color: '#215C98', fontWeight: 600 }}>
-        Bag change is due on this date.
-      </span>
-    )}
-    {item.isReprogram && (
-      <div style={{ color: 'green', fontWeight: 'bold', marginTop: '4px' }}>
-        Pump reprogram needed
-      </div>
-    )}
-    {item.requiresRNVisit && (
-      <div style={{ color: '#c0392b', fontWeight: 'bold', marginTop: '4px' }}>
-        RN visit required for this bag change and pump reprogram.
-      </div>
-    )}
-  </>
-)}
+              {item.type === 'bag' && (
+                <>
+                  <strong>{item.label}</strong><br />
+                  Duration: {item.duration} day(s)<br />
+                  Volume: {item.volume}<br />
+                  Rate: {item.rate}<br />
+                  {patient.bagChangeBy === "Providence Infusion" ? (
+                    <span style={{ color: '#215C98', fontWeight: 600 }}>
+                      A nurse will make a visit to do the bag change.<br />
+                      You will receive a call the day before to schedule your visit time.
+                    </span>
+                  ) : (
+                    <span style={{ color: '#215C98', fontWeight: 600 }}>
+                      Bag change is due on this date.
+                    </span>
+                  )}
+                  {item.isReprogram && (
+                    <div style={{ color: 'green', fontWeight: 'bold', marginTop: '4px' }}>
+                      Pump reprogram needed
+                    </div>
+                  )}
+                  {item.requiresRNVisit && (
+                    <div style={{ color: '#c0392b', fontWeight: 'bold', marginTop: '4px' }}>
+                      RN visit required for this bag change.
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           ))}
         </td>
@@ -313,10 +325,12 @@ border: item.type === 'final-disconnect' ? '1px solid #721c24' :  // RED border 
     );
   };
 
+  // ----- Build Full Calendar -----
   const schedule = generateSchedule();
-
+  const rnVisits = patient.rnVisits || [];
   let disconnectDate = null;
   let disconnectDateKey = null;
+
   if (schedule.length > 0) {
     const lastBag = schedule[schedule.length - 1];
     disconnectDate = new Date(lastBag.date);
@@ -324,129 +338,132 @@ border: item.type === 'final-disconnect' ? '1px solid #721c24' :  // RED border 
     disconnectDateKey = formatDateKey(disconnectDate);
   }
 
+  // Map day -> bag(s) for calendar
   const dayMap = new Map();
 
-schedule.forEach((bag, i) => {
-  if (!dayMap.has(bag.dateKey)) dayMap.set(bag.dateKey, []);
-  const prev = i > 0 ? schedule[i - 1] : null;
-  const isReprogram = prev && bag.duration !== prev.duration;
-  const requiresRNVisit = prev && bag.duration < prev.duration;
-
-  dayMap.get(bag.dateKey).push({
-    type: 'bag',
-    ...bag,
-    isReprogram,
-    requiresRNVisit
+  schedule.forEach((bag, i) => {
+    if (!dayMap.has(bag.dateKey)) dayMap.set(bag.dateKey, []);
+    const prev = i > 0 ? schedule[i - 1] : null;
+    const isReprogram = prev && bag.duration !== prev.duration;
+    // Show RN visit alert if checked for this bag, or if duration dropped (reprogram).
+    const requiresRNVisit =
+      (Array.isArray(rnVisits) && rnVisits[i]) ||
+      (prev && bag.duration < prev.duration);
+    dayMap.get(bag.dateKey).push({
+      type: 'bag',
+      ...bag,
+      isReprogram,
+      requiresRNVisit
+    });
   });
-});
-
 
   if (disconnectDateKey) {
     if (!dayMap.has(disconnectDateKey)) dayMap.set(disconnectDateKey, []);
     dayMap.get(disconnectDateKey).push({ type: 'final-disconnect' });
   }
 
+  // Find calendar bounds
   const allDates = Array.from(dayMap.keys()).map(d => parseDate(d));
   const minDate = new Date(Math.min(...allDates));
   const maxDate = new Date(Math.max(...allDates));
-
   const monthGrids = [];
   let currentMonth = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
   const endMonth = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
 
   while (currentMonth <= endMonth) {
-    monthGrids.push(buildCalendarGridForMonth(currentMonth.getFullYear(), currentMonth.getMonth(), dayMap));
+    monthGrids.push(buildCalendarGridForMonth(currentMonth.getFullYear(), currentMonth.getMonth(), dayMap, rnVisits));
     currentMonth.setMonth(currentMonth.getMonth() + 1);
   }
 
-return (
-  <div style={{ padding: '40px', fontFamily: 'Arial' }}>
-    <button
-      onClick={() => window.print()}
-      style={{
-        marginBottom: '20px',
-        padding: '10px 20px',
-        backgroundColor: '#153D64',
-        color: 'white',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        fontSize: '16px'
-      }}
-      className="no-print"
-    >
-      Print Schedule
-    </button>
+  // ----- RENDER -----
+  return (
+    <div style={{ padding: '40px', fontFamily: 'Arial' }}>
+      <button
+        onClick={() => window.print()}
+        style={{
+          marginBottom: '20px',
+          padding: '10px 20px',
+          backgroundColor: '#153D64',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontSize: '16px'
+        }}
+        className="no-print"
+      >
+        Print Schedule
+      </button>
 
-    {/* PATIENT NAME, DOB, TITLE */}
-    <div style={{ textAlign: 'center', marginBottom: '18px' }}>
-      <h1 style={{
-        fontSize: '2.3rem',
-        fontWeight: 700,
-        margin: 0,
-        color: '#153D64',
-        letterSpacing: '0.02em'
-      }}>
-        {patient.name}
-      </h1>
-      {patient.dob && (
-        <div style={{
-          fontSize: '1.1rem',
-          color: '#444',
-          margin: '5px 0 0 0'
+      {/* Patient Header */}
+      <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+        <h1 style={{
+          fontSize: '2.3rem',
+          fontWeight: 700,
+          margin: 0,
+          color: '#153D64',
+          letterSpacing: '0.02em'
         }}>
-          DOB: {patient.dob}
-        </div>
-      )}
-      <h2 style={{
-        margin: '15px 0 0 0',
-        fontWeight: 600,
-        color: '#153D64',
-        fontSize: '1.5rem'
-      }}>
-        Blincyto Calendar
-      </h2>
-    </div>
-
-    {/* SUMMARY BAR */}
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      gap: '40px',
-      marginBottom: '30px',
-      fontSize: '14px'
-    }}>
-      <div><strong>Cycle Days:</strong> {patient.daysInCycle}</div>
-      <div><strong>Start Date:</strong> {patient.ourStartDate}</div>
-      <div><strong>Final Disconnect:</strong> {disconnectDateKey || '[not calculated]'}</div>
-    </div>
-
-    {/* NURSING VISIT INFO */}
-    <div style={{ fontSize: '14px', marginBottom: '40px' }}>
-      <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
-      <p style={{ whiteSpace: 'pre-wrap' }}>
-        {getNurseVisitStatement(
-          patient.bagChangeBy,
-          patient.centralLineCareBy,
-          patient.labsManagedBy,
-          patient.nursingVisitDay
+          {patient.name}
+        </h1>
+        {patient.dob && (
+          <div style={{
+            fontSize: '1.1rem',
+            color: '#444',
+            margin: '5px 0 0 0'
+          }}>
+            DOB: {patient.dob}
+          </div>
         )}
-      </p>
+        <h2 style={{
+          margin: '15px 0 0 0',
+          fontWeight: 600,
+          color: '#153D64',
+          fontSize: '1.5rem'
+        }}>
+          Blincyto Calendar
+        </h2>
+      </div>
+
+      {/* Summary Bar */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '40px',
+        marginBottom: '30px',
+        fontSize: '14px'
+      }}>
+        <div><strong>Cycle Days:</strong> {patient.daysInCycle}</div>
+        <div><strong>Start Date:</strong> {patient.ourStartDate}</div>
+        <div><strong>Final Disconnect:</strong> {disconnectDateKey || '[not calculated]'}</div>
+      </div>
+
+      {/* Nursing Visit Info */}
+      <div style={{ fontSize: '14px', marginBottom: '40px' }}>
+        <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
+        <p style={{ whiteSpace: 'pre-wrap' }}>
+          {getNurseVisitStatement(
+            patient.bagChangeBy,
+            patient.centralLineCareBy,
+            patient.labsManagedBy,
+            patient.nursingVisitDay
+          )}
+        </p>
+      </div>
+
+      {/* Calendar Grids */}
+      {monthGrids}
+
+      {/* Print Styles */}
+      <style>{`
+        @media print {
+          @page { size: landscape; }
+          * { visibility: visible !important; }
+          button, nav, .no-print { display: none !important; }
+          body { background: white; }
+          td, tr, table, div, h1, h2, h3, p { page-break-inside: avoid; }
+        }
+      `}</style>
     </div>
-
-    {/* CALENDAR GRIDS */}
-    {monthGrids}
-
-    {/* PRINT STYLES */}
-    <style>{`
-      @media print {
-        @page { size: landscape; }
-        * { visibility: visible !important; }
-        button, nav, .no-print { display: none !important; }
-        body { background: white; }
-        td, tr, table, div, h1, h2, h3, p { page-break-inside: avoid; }
-      }
-    `}</style>
-  </div>
-);
+  );
 }

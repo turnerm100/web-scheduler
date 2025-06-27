@@ -1,6 +1,6 @@
 import { isTomorrow, isTodayAndDifferentFromPrevious } from './generateBagSchedule';
 
-export function shouldHighlightRow(bagData, patient) {
+export function shouldHighlightRow(bagData, patient, rnVisitNeededEdits = {}) {
   const todayStr = new Date().toDateString();
 
   const isDisconnectToday = (() => {
@@ -14,7 +14,7 @@ export function shouldHighlightRow(bagData, patient) {
   })();
 
   const showDisconnectAlert = isDisconnectToday || isDisconnectTomorrow;
-  const showPtDoingBagsAlert = patient.bagChangeBy?.toString().toLowerCase() === 'pt/cg';
+  const isPtCg = patient.bagChangeBy && patient.bagChangeBy.toLowerCase().includes('pt');
 
   for (let i = 0; i < bagData.length; i++) {
     const bag = bagData[i];
@@ -23,15 +23,21 @@ export function shouldHighlightRow(bagData, patient) {
     const isTomorrowBag = isTomorrow(bag.startDateObj);
     const isFirstBagToday = i === 0 && isToday;
     const isPumpReprogram = isTodayAndDifferentFromPrevious(bag, prevBag);
+    const rnVisitChecked = isPtCg && rnVisitNeededEdits[patient.id]?.[i];
 
+    // Highlight for RN visit checkbox (green/yellow)
+    if (rnVisitChecked && isToday) return true;
+    if (rnVisitChecked && isTomorrowBag) return true;
+
+    // All original highlight rules
     if (
       (i > 0 && bag.durationDays < prevBag?.durationDays && isTomorrowBag) ||
       (i > 0 && bag.durationDays < prevBag?.durationDays && isToday) ||
       isFirstBagToday ||
       isPumpReprogram ||
-      (i === 0 && isTomorrowBag && !showPtDoingBagsAlert) ||
-      (isTomorrowBag && !showPtDoingBagsAlert) ||
-      (isToday && !showPtDoingBagsAlert)
+      (i === 0 && isTomorrowBag && !isPtCg) ||
+      (isTomorrowBag && !isPtCg) ||
+      (isToday && !isPtCg)
     ) {
       return true;
     }
