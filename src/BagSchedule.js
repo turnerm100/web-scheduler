@@ -478,10 +478,10 @@ export default function BagSchedule() {
               borderRight: '3px solid #333'
             }}
           >
-            <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333' }}>Patient Name:</th>
-            <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '160px', width: '75px' }}>Blincyto Start Date:</th>
-            <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '160px', width: '75px' }}>PIPS Start Date:</th>
-            <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '160px', width: '75px' }}>Cycle Days:</th>
+            <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333' }}>Patient Info:</th>
+<th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '180px', width: '120px' }}>
+  Blincyto Cycle Info:
+</th>
             <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333' }}>Blincyto Bag Info:</th>
             <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333' }}>Disconnect Date:</th>
             <th style={{ borderLeft: '3px solid #333', borderRight: '3px solid #333', maxWidth: '160px', width: '100px' }}>Actions:</th>
@@ -598,9 +598,17 @@ export default function BagSchedule() {
                     })()}
                   </button>
                 </td>
-                <td>{formatDate(hospitalDate)}</td>
-                <td>{formatDate(ourDate)}</td>
-                <td>{patient.daysInCycle}</td>
+<td>
+  <div style={{ fontSize: '13px', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+    <strong>Blincyto Start Date:</strong>
+    <div>{formatDate(hospitalDate)}</div>
+    <strong>PIPS Start Date:</strong>
+    <div>{formatDate(ourDate)}</div>
+    <strong>Cycle Days:</strong>
+    <div>{patient.daysInCycle}</div>
+  </div>
+</td>
+
                 <td>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     {bagData.map((bag, i) => {
