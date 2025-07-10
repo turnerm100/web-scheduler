@@ -768,51 +768,6 @@ export default function BagSchedule() {
                   <div style={{ marginBottom: '12px', fontSize: '12px', textAlign: 'center' }}>
                     Provides a schedule of bag changes and nurse visits.
                   </div>
-                  <button
-                    className="rounded-button"
-                    style={{ backgroundColor: '#FF4C4C', color: 'white', marginBottom: '4px', width: '100%' }}
-                    onClick={async () => {
-                      if (window.confirm('Are you sure you want to delete the Blincyto schedule for this patient?')) {
-                        try {
-                          await updateDoc(doc(db, 'patients', patient.id), {
-                            cycle: '',
-                            daysInCycle: '',
-                            pipsBagChanges: '',
-                            nursingVisitPlan: '',
-                            nursingVisitDay: '',
-                            hospStartDate: '',
-                            ourStartDate: '',
-                            hookupTime: '',
-                            isPreservativeFree: false,
-                            bagOverrides: [],
-                            bagTimes: {
-                              bags: Array(28).fill(''),
-                              disconnect: ''
-                            },
-                            rnVisits: []
-                          });
-
-                          await logAuditEvent(
-                            getAuth().currentUser,
-                            'DELETE',
-                            'Schedule',
-                            patient.id,
-                            'Deleted Blincyto schedule for patient'
-                          );
-
-                          alert('Blincyto schedule deleted for this patient.');
-                        } catch (error) {
-                          console.error('Error clearing schedule:', error);
-                          alert('Failed to delete Blincyto schedule.');
-                        }
-                      }
-                    }}
-                  >
-                    Delete Schedule
-                  </button>
-                  <div style={{ fontSize: '12px', textAlign: 'center' }}>
-                    Current Blincyto cycle information will be deleted. Patient information will be saved.
-                  </div>
                 </td>
               </tr>
             );

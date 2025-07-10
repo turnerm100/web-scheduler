@@ -142,17 +142,6 @@ export default function PrintSchedule() {
   const formatDateKey = (date) =>
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-  const getVolumeAndRate = (duration) => {
-    switch (duration) {
-      case 1: return { volume: '240ml', rate: '10ml/hr' };
-      case 2: return { volume: '240ml', rate: '5ml/hr' };
-      case 3: return { volume: '130ml', rate: '1.8ml/hr' };
-      case 4: return { volume: '173ml', rate: '1.8ml/hr' };
-      case 7: return { volume: '101ml', rate: '0.6ml/hr' };
-      default: return { volume: 'TBD', rate: 'TBD' };
-    }
-  };
-
   // -------- Bag Schedule Logic --------
   const generateSchedule = () => {
     const totalDays = parseInt(patient.daysInCycle, 10);
@@ -188,15 +177,12 @@ export default function PrintSchedule() {
       }
 
       const start = new Date(current);
-      const { volume, rate } = getVolumeAndRate(duration);
 
       schedule.push({
         label: `Bag ${i + 1}`,
         dateKey: formatDateKey(start),
         date: start,
         duration,
-        volume,
-        rate,
         bagIndex: i
       });
 
@@ -208,122 +194,133 @@ export default function PrintSchedule() {
   };
 
   // -------- Calendar Grid for Month --------
-  const buildCalendarGridForMonth = (year, month, dayMap, rnVisits = []) => {
-    const firstOfMonth = new Date(year, month, 1);
-    const lastOfMonth = new Date(year, month + 1, 0);
-    const startDay = firstOfMonth.getDay();
-    const totalDays = lastOfMonth.getDate();
-    const cells = [];
+  const buildCalendarGridForMonth = (year, month, dayMap, rnVisits = []) => (
+    <div
+      className="calendar-month"
+      key={`${year}-${month}`}
+      style={{
+        pageBreakInside: 'avoid',
+        breakInside: 'avoid',
+        overflow: 'visible',
+        marginBottom: '40px'
+      }}
+    >
+      <h3 style={{ marginBottom: '10px', textAlign: 'center' }}>
+        {new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+      </h3>
+      <table
+        style={{
+          width: '100%',
+          tableLayout: 'fixed',
+          borderCollapse: 'collapse',
+          marginBottom: '20px'
+        }}
+      >
+        <thead>
+          <tr style={{ background: '#153D64', color: 'white' }}>
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <th key={day} style={{ padding: '8px', border: '1px solid #ccc' }}>{day}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {
+            (() => {
+              const firstOfMonth = new Date(year, month, 1);
+              const lastOfMonth = new Date(year, month + 1, 0);
+              const startDay = firstOfMonth.getDay();
+              const totalDays = lastOfMonth.getDate();
+              const cells = [];
 
-    for (let i = 0; i < startDay; i++) cells.push(<td key={`empty-${year}-${month}-${i}`}></td>);
+              for (let i = 0; i < startDay; i++) cells.push(<td key={`empty-${year}-${month}-${i}`}></td>);
 
-    for (let d = 1; d <= totalDays; d++) {
-      const date = new Date(year, month, d);
-      const key = formatDateKey(date);
-      const items = dayMap.get(key) || [];
+              for (let d = 1; d <= totalDays; d++) {
+                const date = new Date(year, month, d);
+                const key = formatDateKey(date);
+                const items = dayMap.get(key) || [];
 
-      cells.push(
-        <td
-          key={key}
-          style={{
-            border: '1px solid #ccc',
-            verticalAlign: 'top',
-            padding: '6px',
-            width: '14.28%',
-            height: '120px',
-            wordWrap: 'break-word',
-            whiteSpace: 'normal',
-            overflowWrap: 'break-word'
-          }}
-        >
-          <strong>{d}</strong>
-          {items.map((item, index) => (
-            <div
-              key={index}
-              style={{
-                marginTop: '5px',
-                background:
-                  item.type === 'final-disconnect' ? '#f8d7da' :
-                  item.type === 'bag' && item.isReprogram ? '#d4edda' :
-                  item.type === 'bag' ? '#eaf3fb' : 'transparent',
-                border:
-                  item.type === 'final-disconnect' ? '1px solid #721c24' :
-                  item.type === 'bag' && item.isReprogram ? '1px solid #155724' :
-                  item.type === 'bag' ? '1px solid #153D64' : 'none',
-                borderRadius: '6px',
-                padding: '5px',
-                fontSize: '12px'
-              }}
-            >
-              {item.type === 'final-disconnect' && (
-                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#721c24' }}>
-                  Final Disconnect – Your blincyto Cycle will be completed on this date. A nurse will be doing your final disconnect. You should receive a call the day before to schedule the appropriate time for this visit.
-                </div>
-              )}
-              {item.type === 'bag' && (
-                <>
-                  <strong>{item.label}</strong><br />
-                  Duration: {item.duration} day(s)<br />
-                  Volume: {item.volume}<br />
-                  Rate: {item.rate}<br />
-                  {patient.bagChangeBy === "Providence Infusion" ? (
-                    <span style={{ color: '#215C98', fontWeight: 600 }}>
-                      A nurse will make a visit to do the bag change.<br />
-                      You will receive a call the day before to schedule your visit time.
-                    </span>
-                  ) : (
-                    <span style={{ color: '#215C98', fontWeight: 600 }}>
-                      Bag change is due on this date.
-                    </span>
-                  )}
-                  {item.isReprogram && (
-                    <div style={{ color: 'green', fontWeight: 'bold', marginTop: '4px' }}>
-                      Pump reprogram needed
-                    </div>
-                  )}
-                  {item.requiresRNVisit && (
-                    <div style={{ color: '#c0392b', fontWeight: 'bold', marginTop: '4px' }}>
-                      RN visit required for this bag change.
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
-        </td>
-      );
-    }
+                cells.push(
+                  <td
+                    key={key}
+                    style={{
+                      border: '1px solid #ccc',
+                      verticalAlign: 'top',
+                      padding: '6px',
+                      width: '14.28%',
+                      height: '120px',
+                      wordWrap: 'break-word',
+                      whiteSpace: 'normal',
+                      overflowWrap: 'break-word'
+                    }}
+                  >
+                    <strong>{d}</strong>
+                    {items.map((item, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          marginTop: '5px',
+                          background:
+                            item.type === 'final-disconnect' ? '#f8d7da' :
+                            item.type === 'bag' && item.isReprogram ? '#d4edda' :
+                            item.type === 'bag' ? '#eaf3fb' : 'transparent',
+                          border:
+                            item.type === 'final-disconnect' ? '1px solid #721c24' :
+                            item.type === 'bag' && item.isReprogram ? '1px solid #155724' :
+                            item.type === 'bag' ? '1px solid #153D64' : 'none',
+                          borderRadius: '6px',
+                          padding: '5px',
+                          fontSize: '12px'
+                        }}
+                      >
+                        {item.type === 'final-disconnect' && (
+                          <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#721c24' }}>
+                            Final Disconnect – Your blincyto Cycle will be completed on this date. A nurse will be doing your final disconnect. You should receive a call the day before to schedule the appropriate time for this visit.
+                          </div>
+                        )}
+                        {item.type === 'bag' && (
+                          <>
+                            <strong>{item.label}</strong><br />
+                            Duration: {item.duration} day(s)<br />
+                            {patient.bagChangeBy === "Providence Infusion" ? (
+                              <span style={{ color: '#215C98', fontWeight: 600 }}>
+                                A nurse will make a visit to do the bag change.<br />
+                                You will receive a call the day before to schedule your visit time.
+                              </span>
+                            ) : (
+                              <span style={{ color: '#215C98', fontWeight: 600 }}>
+                                Bag change is due on this date.
+                              </span>
+                            )}
+                            {item.isReprogram && (
+                              <div style={{ color: 'green', fontWeight: 'bold', marginTop: '4px' }}>
+                                Pump reprogram needed
+                              </div>
+                            )}
+                            {item.requiresRNVisit && (
+                              <div style={{ color: '#c0392b', fontWeight: 'bold', marginTop: '4px' }}>
+                                RN visit required for this bag change.
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </td>
+                );
+              }
 
-    const rows = [];
-    for (let i = 0; i < cells.length; i += 7) {
-      rows.push(<tr key={`row-${year}-${month}-${i}`}>{cells.slice(i, i + 7)}</tr>);
-    }
-
-    return (
-      <div style={{ pageBreakInside: 'avoid', overflow: 'visible', marginBottom: '40px' }} key={`${year}-${month}`}>
-        <h3 style={{ marginBottom: '10px', textAlign: 'center' }}>
-          {new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-        </h3>
-        <table
-          style={{
-            width: '100%',
-            tableLayout: 'fixed',
-            borderCollapse: 'collapse',
-            marginBottom: '20px'
-          }}
-        >
-          <thead>
-            <tr style={{ background: '#153D64', color: 'white' }}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <th key={day} style={{ padding: '8px', border: '1px solid #ccc' }}>{day}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>{rows}</tbody>
-        </table>
-      </div>
-    );
-  };
+              // Add rows of 7 cells (week by week)
+              const rows = [];
+              for (let i = 0; i < cells.length; i += 7) {
+                rows.push(<tr key={`row-${year}-${month}-${i}`}>{cells.slice(i, i + 7)}</tr>);
+              }
+              return rows;
+            })()
+          }
+        </tbody>
+      </table>
+    </div>
+  );
 
   // ----- Build Full Calendar -----
   const schedule = generateSchedule();
@@ -345,7 +342,6 @@ export default function PrintSchedule() {
     if (!dayMap.has(bag.dateKey)) dayMap.set(bag.dateKey, []);
     const prev = i > 0 ? schedule[i - 1] : null;
     const isReprogram = prev && bag.duration !== prev.duration;
-    // Show RN visit alert if checked for this bag, or if duration dropped (reprogram).
     const requiresRNVisit =
       (Array.isArray(rnVisits) && rnVisits[i]) ||
       (prev && bag.duration < prev.duration);
@@ -369,101 +365,207 @@ export default function PrintSchedule() {
   const monthGrids = [];
   let currentMonth = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
   const endMonth = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+  let monthIdx = 0;
 
   while (currentMonth <= endMonth) {
-    monthGrids.push(buildCalendarGridForMonth(currentMonth.getFullYear(), currentMonth.getMonth(), dayMap, rnVisits));
+    if (monthIdx > 0) {
+      monthGrids.push(<div key={`break-${monthIdx}`} className="page-break" />);
+    }
+    monthGrids.push(
+      buildCalendarGridForMonth(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth(),
+        dayMap,
+        rnVisits
+      )
+    );
     currentMonth.setMonth(currentMonth.getMonth() + 1);
+    monthIdx++;
   }
 
   // ----- RENDER -----
   return (
     <div style={{ padding: '40px', fontFamily: 'Arial' }}>
-      <button
-        onClick={() => window.print()}
-        style={{
-          marginBottom: '20px',
-          padding: '10px 20px',
-          backgroundColor: '#153D64',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontSize: '16px'
-        }}
-        className="no-print"
-      >
-        Print Schedule
-      </button>
+      <div className="no-print" style={{ marginBottom: '20px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+        <button
+          onClick={() => window.print()}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#153D64',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '16px'
+          }}
+        >
+          Print Schedule
+        </button>
+        <span
+          style={{
+            background: '#f5f5fa',
+            border: '1px solid #bfc5d0',
+            color: '#153D64',
+            padding: '9px 16px',
+            borderRadius: '6px',
+            fontSize: '15px',
+            maxWidth: '380px'
+          }}
+        >
+          <strong>Tip:</strong> For a printable PDF file that can be shared with other caregivers, use your browser's <b>Print</b> dialog and select <b>Save as PDF</b>.
+        </span>
+      </div>
 
-      {/* Patient Header */}
-      <div style={{ textAlign: 'center', marginBottom: '18px' }}>
-        <h1 style={{
-          fontSize: '2.3rem',
-          fontWeight: 700,
-          margin: 0,
-          color: '#153D64',
-          letterSpacing: '0.02em'
-        }}>
-          {patient.name}
-        </h1>
-        {patient.dob && (
-          <div style={{
-            fontSize: '1.1rem',
-            color: '#444',
-            margin: '5px 0 0 0'
+      {/* -- PRINTABLE CONTENT -- */}
+      <div id="print-root">
+        {/* Patient Header */}
+        <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+          <h1 style={{
+            fontSize: '2.3rem',
+            fontWeight: 700,
+            margin: 0,
+            color: '#153D64',
+            letterSpacing: '0.02em'
           }}>
-            DOB: {patient.dob}
-          </div>
-        )}
-        <h2 style={{
-          margin: '15px 0 0 0',
-          fontWeight: 600,
-          color: '#153D64',
-          fontSize: '1.5rem'
-        }}>
-          Blincyto Calendar
-        </h2>
-      </div>
-
-      {/* Summary Bar */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '40px',
-        marginBottom: '30px',
-        fontSize: '14px'
-      }}>
-        <div><strong>Cycle Days:</strong> {patient.daysInCycle}</div>
-        <div><strong>Start Date:</strong> {patient.ourStartDate}</div>
-        <div><strong>Final Disconnect:</strong> {disconnectDateKey || '[not calculated]'}</div>
-      </div>
-
-      {/* Nursing Visit Info */}
-      <div style={{ fontSize: '14px', marginBottom: '40px' }}>
-        <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
-        <p style={{ whiteSpace: 'pre-wrap' }}>
-          {getNurseVisitStatement(
-            patient.bagChangeBy,
-            patient.centralLineCareBy,
-            patient.labsManagedBy,
-            patient.nursingVisitDay
+            {patient.name}
+          </h1>
+          {patient.dob && (
+            <div style={{
+              fontSize: '1.1rem',
+              color: '#444',
+              margin: '5px 0 0 0'
+            }}>
+              DOB: {patient.dob}
+            </div>
           )}
-        </p>
+          <h2 style={{
+            margin: '15px 0 0 0',
+            fontWeight: 600,
+            color: '#153D64',
+            fontSize: '1.5rem'
+          }}>
+            Blincyto Calendar
+          </h2>
+        </div>
+
+        {/* Summary Bar */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '40px',
+          marginBottom: '30px',
+          fontSize: '14px'
+        }}>
+          <div><strong>Cycle Days:</strong> {patient.daysInCycle}</div>
+          <div><strong>Start Date:</strong> {patient.ourStartDate}</div>
+          <div><strong>Final Disconnect:</strong> {disconnectDateKey || '[not calculated]'}</div>
+        </div>
+
+        {/* Nursing Visit Info */}
+        <div style={{ fontSize: '14px', marginBottom: '40px' }}>
+          <h3 style={{ color: '#153D64' }}>Nursing Visit Information</h3>
+          <p style={{ whiteSpace: 'pre-wrap' }}>
+            {getNurseVisitStatement(
+              patient.bagChangeBy,
+              patient.centralLineCareBy,
+              patient.labsManagedBy,
+              patient.nursingVisitDay
+            )}
+          </p>
+        </div>
+
+        {/* Calendar Grids */}
+        {monthGrids}
       </div>
 
-      {/* Calendar Grids */}
-      {monthGrids}
+<style>{`
+  @media print {
+    html, body {
+      font-size: 14px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      color-adjust: exact !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      background: white !important;
+    }
+    #print-root {
+      max-width: 1200px !important;
+      margin: 0 auto !important;
+      font-size: 14px !important;
+      padding: 10px !important;
+    }
+    .calendar-month {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      margin-bottom: 40px !important;
+    }
+    h1, h2, h3 {
+      font-size: 1.3em !important;
+      margin: 0 0 0.2em 0 !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+      color: #153D64 !important;
+    }
+    table {
+      width: 100% !important;
+      table-layout: fixed !important;
+      border-collapse: collapse !important;
+      background: white !important;
+      font-size: 13px !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    th {
+      background: #153D64 !important;
+      color: white !important;
+      font-weight: bold !important;
+      font-size: 16px !important;
+      height: 36px !important;        /* <-- shorter header row! */
+      padding: 5px !important;
+      vertical-align: middle !important;
+    }
+    td {
+      border: 1px solid #bfc7d3 !important;
+      padding: 8px !important;
+      font-size: 13px !important;
+      vertical-align: top !important;
+      background: white !important;
+      height: 68px !important;         /* regular days stay tall */
+    }
+    .calendar-card {
+      border-radius: 8px !important;
+      border: 1.5px solid #153D64 !important;
+      background: #eaf3fb !important;
+      padding: 5px 7px !important;
+      margin-top: 6px !important;
+      font-size: 12.5px !important;
+      color: #153D64 !important;
+    }
+    .calendar-card.reprogram {
+      border-color: #228b22 !important;
+      background: #d4edda !important;
+      color: #155724 !important;
+      font-weight: bold !important;
+    }
+    .calendar-card.disconnect {
+      border-color: #721c24 !important;
+      background: #f8d7da !important;
+      color: #721c24 !important;
+      font-weight: bold !important;
+    }
+    .no-print {
+      display: none !important;
+    }
+    .page-break {
+      display: block;
+      page-break-before: always !important;
+      break-before: page !important;
+      height: 0 !important;
+    }
+  }
+`}</style>
 
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          @page { size: landscape; }
-          * { visibility: visible !important; }
-          button, nav, .no-print { display: none !important; }
-          body { background: white; }
-          td, tr, table, div, h1, h2, h3, p { page-break-inside: avoid; }
-        }
-      `}</style>
     </div>
   );
 }
